@@ -1,0 +1,28 @@
+<apex:page lightningStylesheets="true" controller="cntl_page_executeBatchApex">
+  <apex:form id="frm">
+    <apex:pageBlock id="pb" title="Execute Batch">
+      <apex:messages />
+      <apex:pageBlockSection id="pbs">
+        <apex:outputPanel id="op">
+          <table id="tbl">
+            <tbody id="tb">
+              <tr id="tr1">
+                <td id="td1_01"><apex:outputText id="sl_lbl" value="Batch Name" /></td>
+                <td id="td1_02">
+                  <apex:selectList id="sl" value="{!str_batchName}">
+                    <apex:selectOptions value="{!lst_batOpt}" />
+                  </apex:selectList>      
+                </td>
+              </tr>
+              <tr id="tr2">
+                <td id="td2_01"><apex:outputText id="it1_lbl" value="Batch Size" /></td><td id="td2_02"><apex:inputText id="it1" value="{!dec_batchSize}" /></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <apex:commandButton id="btn" value="Execute" action="{!execute}" reRender="frm" />
+        </apex:outputPanel>
+      </apex:pageBlockSection>
+    </apex:pageBlock>
+  </apex:form>
+</apex:page>

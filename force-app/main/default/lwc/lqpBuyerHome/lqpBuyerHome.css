@@ -1,0 +1,65 @@
+.pagging-aria {
+    margin-top: 20px;
+}
+
+.action-edit-delete-aria {
+    display: flex;
+    justify-content: space-between;
+}
+
+.email-report-input{
+    margin-right: 10px;
+}
+
+.main-header {
+    background-color: white;
+    width: 1000px;
+    margin: auto;
+}
+
+.main-card {
+    margin: 20px;
+    min-width: 1000px;
+}
+
+.data-table-div {
+    width: 1000px;
+    margin: auto;
+}
+
+.select-box-country {
+    display: flex;
+    justify-content: space-between;
+    width: 1000px;
+    margin: auto;
+    padding:0px 16px 16px 16px;
+}
+
+.select-action-area{
+    display: flex;
+}
+
+.select-result-text{
+    display: flex;
+    margin-right: 50px;
+}
+
+.iso-country-text{
+    width: 100px;
+}
+
+.file-loading-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.file-loading-area .status-icon {
+    margin-bottom: 20px;
+}
+
+.import-modal-close {
+    margin-left: 15px;
+}

@@ -1,0 +1,30 @@
+<!-- sldsValidatorIgnore -->
+<template>
+    <div class = 'fillter-div'>
+        <div class="slds-form-element__control slds-input-has-fixed-addon">
+            <span class="slds-form-element__addon">Fillter</span>
+            <div class="slds-select_container">
+                <select class="slds-select" id="select-01" onchange={handleSelectFillter}>
+                    <option value=""></option>
+                    <option key = {filter.name} value={filter.name}  for:each= {listFillter} for:item='filter'>{filter.label}</option>
+                </select>
+            </div>
+        </div>
+        <div class="fillter-input" if:true={showFillterInput}>
+            <div class="slds-form-element__control slds-input-has-fixed-addon">
+                <span class="slds-form-element__addon">Value</span>
+                <input class = "slds-input" type="text" if:false={currentFillterInput.isCombobox}>
+                <select class = "slds-select" if:true={currentFillterInput.isCombobox}>
+                    <template for:each={currentFillterInput.options} for:item="optionItem">
+                        <option key = {optionItem} value={optionItem}>{optionItem}</option>
+                    </template>
+                </select>
+            </div>
+            <lightning-button class="btn-fillter-start" label="Fill" variant="brand" name="fill-start-btn"></lightning-button>
+        </div>
+    </div>
+    <!-- <div class="slds-form-element">
+        <div class="slds-form-element__control">
+        </div>
+    </div> -->
+</template>
