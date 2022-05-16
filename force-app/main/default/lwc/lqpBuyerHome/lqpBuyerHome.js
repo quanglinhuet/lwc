@@ -613,19 +613,35 @@ export default class DataTableComponent extends LightningElement {
         reader.readAsBinaryString(file);
     }
 
-    importExcelHandle() {
-        var success = true;
-        var rowsError = [];
-        console.log(this.roughSizeOfObject(this.xlsxImportData));
+    async importExcelHandle() {
+        console.log('Size Object: ' + this.roughSizeOfObject(this.xlsxImportData));
+        let importSuccess = true;
+        let rowsError = [];
+        let totalBlock = Math.ceil(this.xlsxImportData.length / 500);
         this.fileXlsxLoading = true;
         // TODO
-        for (let i = 0; i < this.xlsxImportData.length; i+= 500) {
-            importFromExcel({data: this.xlsxImportData.slice(i, i + 500)}).then(result => {
-                console.log(result);
+        let handleResult = (result) => {
+            // console.log(result);
+            let rsObject = JSON.parse(result);
+            if (!rsObject.success) {
+                importSuccess = false;
+                rowsError.push(rsObject.indexsErrorRecord);
+            }
+            if (--totalBlock === 0) {
+                console.log(`success: ${importSuccess}\n`);
+                if (!importSuccess) {
+                    console.log(rowsError.toString());
+                }
                 this.isInImportProcess = false;
                 this.isImportSuccess = true;
-                this.fileXlsxLoading = false;   
-            }).catch (error => {
+                this.fileXlsxLoading = false;
+            }
+        }
+        for (let i = 0; i < this.xlsxImportData.length; i+= 500) {
+            // eslint-disable-next-line no-await-in-loop
+            await importFromExcel({data: this.xlsxImportData.slice(i, i + 500), startIndex: i})
+            .then(handleResult)
+            .catch (error => {
                 console.log(error);
                 this.isInImportProcess = false;
                 this.isImportSuccess = false;

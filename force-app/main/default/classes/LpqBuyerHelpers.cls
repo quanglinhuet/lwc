@@ -132,7 +132,7 @@ public with sharing class LpqBuyerHelpers {
     }
 
     @AuraEnabled
-    public static LpqImportResult importFromExcel(Object data, Integer startIndex){
+    public static String importFromExcel(Object data, Integer startIndex){
         LpqImportResult result = new LpqImportResult();
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
@@ -142,14 +142,13 @@ public with sharing class LpqBuyerHelpers {
         if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
             Database.SaveResult[] sr = Database.insert(listBuyerImport, false);
             for (Integer i = 0; i < sr.size(); i++) {
-                if (!sr.get(i).isSuccess()) {
+                if (!sr.get(i).success) {
                     result.success = false;
                     result.indexsErrorRecord.add(i + startIndex);
                 }
             }
         }
-        Integer i1 = 1;
-        return result;
+        return JSON.serialize(result);
     }
 
     /**
