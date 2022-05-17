@@ -23,12 +23,18 @@
       </div>
       <div class="select-action-area">
         <span class="slds-form-element__addon">CountryCode</span>
-        <select class = "slds-select" onchange={handleSelectCountry}>
+        <input class="slds-input input-search-countrys" type="text" onchange={handleChangeInput}/>
+        <datalist class="search-countrys-list" id = "datalist-country">
+          <template for:each={allCountry} for:item="country">
+            <option key = {country} value={country}>{country}</option>
+          </template>
+        </datalist>
+        <!-- <select class = "slds-select" onchange={handleSelectCountry}>
           <option></option>
           <template for:each={allCountry} for:item="country" onchange={handleSelectCountry}>
               <option key = {country} value={country}>{country}</option>
           </template>
-        </select>
+        </select> -->
       </div>
     </div>
     <br>

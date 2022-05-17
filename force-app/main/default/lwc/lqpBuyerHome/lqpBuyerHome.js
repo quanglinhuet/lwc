@@ -163,6 +163,7 @@ export default class DataTableComponent extends LightningElement {
     @track infoData = { first_name__c: "a" };
     // Select box
     @track isoCountryCodeDisplayed = '';
+    @track countrySearchString = '';
 
 
     // XLSX properties
@@ -178,6 +179,7 @@ export default class DataTableComponent extends LightningElement {
     get importEnable () {
         return this.fileXlsxReady && !this.isInImportProcess;
     }
+
 
     connectedCallback() {
         // Loading sheetjs library
@@ -494,6 +496,7 @@ export default class DataTableComponent extends LightningElement {
      * Render call back
      */
     renderedCallback() {
+        this.template.querySelector('.input-search-countrys').setAttribute('list', this.template.querySelector('.search-countrys-list').id);
         if (this.currentPage === 1) {
             this.disableBack = true;
         } else {
@@ -682,5 +685,16 @@ export default class DataTableComponent extends LightningElement {
             }
         }
         return bytes;
+    }
+
+    handleChangeInput = (e) => {
+        console.log(e.target.value);
+        getISOCountryByCountryCode({countryCode: e.target.value})
+        .then((result) => {
+            this.isoCountryCodeDisplayed = result;
+        })
+        .catch(() => {
+            this.isoCountryCodeDisplayed = '';
+        });
     }
 }
