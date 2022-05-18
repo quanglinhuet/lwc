@@ -620,7 +620,8 @@ export default class DataTableComponent extends LightningElement {
         console.log('Size Object: ' + this.roughSizeOfObject(this.xlsxImportData));
         let importSuccess = true;
         let rowsError = [];
-        let totalBlock = Math.ceil(this.xlsxImportData.length / 500);
+        const BLOCK_SIZE  = 500;
+        let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
         // TODO
         let handleResult = (result) => {
@@ -640,9 +641,9 @@ export default class DataTableComponent extends LightningElement {
                 this.fileXlsxLoading = false;
             }
         }
-        for (let i = 0; i < this.xlsxImportData.length; i+= 500) {
+        for (let i = 0; i < this.xlsxImportData.length; i+= BLOCK_SIZE) {
             // eslint-disable-next-line no-await-in-loop
-            await importFromExcel({data: this.xlsxImportData.slice(i, i + 500), startIndex: i})
+            await importFromExcel({data: this.xlsxImportData.slice(i, i + BLOCK_SIZE), startIndex: i})
             .then(handleResult)
             .catch (error => {
                 console.log(error);
@@ -697,4 +698,6 @@ export default class DataTableComponent extends LightningElement {
             this.isoCountryCodeDisplayed = '';
         });
     }
+
+
 }

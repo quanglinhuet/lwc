@@ -1,0 +1,8 @@
+<template>
+    <div class="slds-grid">
+        <button class="slds-button slds-button--brand" name="Edit" onclick={editTable}>Edit datatable</button>
+    </div>
+    <lightning-datatable class="data-table-buyer" key-field="Id" data={dataTable} row-number-offset={rowOffset}
+        draft-values={draftValues} show-row-number-column columns={columns} onsave={handleSave}>
+    </lightning-datatable>
+</template>
