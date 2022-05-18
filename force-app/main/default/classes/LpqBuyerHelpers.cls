@@ -132,7 +132,7 @@ public with sharing class LpqBuyerHelpers {
     }
 
     @AuraEnabled
-    public static String importFromExcel(Object data, Integer startIndex){
+    public static Object importFromExcel(Object data, Integer startIndex){
         LpqImportResult result = new LpqImportResult();
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
@@ -148,7 +148,7 @@ public with sharing class LpqBuyerHelpers {
                 }
             }
         }
-        return JSON.serialize(result);
+        return JSON.deserializeUntyped(JSON.serialize(result));
     }
 
     /**

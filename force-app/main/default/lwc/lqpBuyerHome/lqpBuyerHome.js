@@ -42,84 +42,6 @@ const jsonParse = (str, defaultVal = null) => {
     }
 };
 
-const defaultHeader = (isEdit) => {
-    return [
-        {
-            label: "Buyer Code",
-            fieldName: "BuyerCode",
-            type: "text",
-            initialWidth: 150,
-            editable: isEdit
-        },
-        {
-            label: "Buyer Address",
-            fieldName: "BuyerAddress",
-            type: "text",
-            initialWidth: 300,
-            editable: isEdit
-        },
-        {
-            label: "Country Code",
-            fieldName: "CountryCode",
-            initialWidth: 150,
-            type: "text",
-            editable: isEdit
-        },
-        {
-            label: "ISO Country Code",
-            fieldName: "ISOCountryCode",
-            initialWidth: 150,
-            type: "text"
-        }
-    ];
-};
-
-const initHeader = (isEdit, data, addViewAndDel = true) => {
-    let headerColumn = [];
-
-    let defValue;
-    if (
-        data === undefined ||
-        data === null ||
-        (Array.isArray(data) && data.length === 0)
-    ) {
-        defValue = defaultHeader();
-    } else {
-        defValue = data;
-    }
-    const addOn = [
-        {
-            label: "View",
-            type: "button-icon",
-            typeAttributes: {
-                name: "preview_detail",
-                iconName: "action:preview",
-                title: "Preview",
-                variant: "border-filled",
-                alternativeText: "View"
-            }
-        },
-        {
-            label: "Delete",
-            type: "button-icon",
-            fieldName: "id",
-            typeAttributes: {
-                iconName: "utility:delete",
-                title: "Delete",
-                variant: "border-filled",
-                alternativeText: "Delete",
-                name: "delete_record"
-            }
-        }
-    ];
-    if (addViewAndDel) {
-        headerColumn = defValue.concat(addOn);
-    } else {
-        headerColumn = defValue;
-    }
-    return headerColumn;
-};
-
 const limitPageValue = [
     {
         label: "3 Records",
@@ -148,7 +70,58 @@ export default class DataTableComponent extends LightningElement {
     @track disableBack = true;
     @track disableNext = true;
     @track totalPageInList = 1;
-    @track columns = initHeader(this.modeEdit);
+    @track columns = [
+        {
+            label: "Buyer Code",
+            fieldName: "BuyerCode",
+            type: "text",
+            initialWidth: 150,
+            editable: false
+        },
+        {
+            label: "Buyer Address",
+            fieldName: "BuyerAddress",
+            type: "text",
+            initialWidth: 300,
+            editable: false
+        },
+        {
+            label: "Country Code",
+            fieldName: "CountryCode",
+            initialWidth: 150,
+            type: "text",
+            editable: false
+        },
+        {
+            label: "ISO Country Code",
+            fieldName: "ISOCountryCode",
+            initialWidth: 150,
+            type: "text"
+        },
+        {
+            label: "View",
+            type: "button-icon",
+            typeAttributes: {
+                name: "preview_detail",
+                iconName: "action:preview",
+                title: "Preview",
+                variant: "border-filled",
+                alternativeText: "View"
+            }
+        },
+        {
+            label: "Delete",
+            type: "button-icon",
+            fieldName: "id",
+            typeAttributes: {
+                iconName: "utility:delete",
+                title: "Delete",
+                variant: "border-filled",
+                alternativeText: "Delete",
+                name: "delete_record"
+            }
+        }
+    ];
     @track record = {};
     @track rowOffset = 0;
     @track data = {};
@@ -162,9 +135,8 @@ export default class DataTableComponent extends LightningElement {
     @track getDataForTableSetting;
     @track infoData = { first_name__c: "a" };
     // Select box
-    @track isoCountryCodeDisplayed = '';
-    @track countrySearchString = '';
-
+    @track isoCountryCodeDisplayed = "";
+    @track countrySearchString = "";
 
     // XLSX properties
     @track importModalIsShow = false;
@@ -176,21 +148,20 @@ export default class DataTableComponent extends LightningElement {
     @track isInImportProcess = false;
     @track isImportSuccess = null;
 
-    get importEnable () {
+    get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
     }
 
-
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([
-        loadScript(this, lpqresource + '/lib/xlsx.full.min.js')
-        ]).then(() => {
-            // eslint-disable-next-line no-undef
-            XLS = XLSX;
-        }).catch(()=>{
-            console.log('loading SheetJS library failue!')
-        });
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")])
+            .then(() => {
+                // eslint-disable-next-line no-undef
+                XLS = XLSX;
+            })
+            .catch(() => {
+                console.log("loading SheetJS library failue!");
+            });
     }
 
     /**
@@ -229,8 +200,8 @@ export default class DataTableComponent extends LightningElement {
         }
     }
 
-    @wire(getAllCountry) 
-    wiredAllCountry({error, data}) {
+    @wire(getAllCountry)
+    wiredAllCountry({ error, data }) {
         if (data) {
             this.allCountry = data;
         } else if (error) {
@@ -264,7 +235,7 @@ export default class DataTableComponent extends LightningElement {
         }
     }
 
-    get getLabelEdit() {
+    get labelEdit() {
         return this.modeEdit ? "Cancel Edit" : "Edit";
     }
 
@@ -312,7 +283,7 @@ export default class DataTableComponent extends LightningElement {
                     }
                     return viewRecord;
                 });
-                
+
                 this.dataTable = newDataTable;
             })
             .catch((e) => {
@@ -496,7 +467,12 @@ export default class DataTableComponent extends LightningElement {
      * Render call back
      */
     renderedCallback() {
-        this.template.querySelector('.input-search-countrys').setAttribute('list', this.template.querySelector('.search-countrys-list').id);
+        this.template
+            .querySelector(".input-search-countrys")
+            .setAttribute(
+                "list",
+                this.template.querySelector(".search-countrys-list").id
+            );
         if (this.currentPage === 1) {
             this.disableBack = true;
         } else {
@@ -536,19 +512,20 @@ export default class DataTableComponent extends LightningElement {
     // }
 
     // select box
-    handleSelectCountry (e) {
+    handleSelectCountry(e) {
         let value = e.target.value;
         if (value) {
-            getISOCountryByCountryCode({countryCode: value}).then((result) => {
-                this.isoCountryCodeDisplayed = result;
-            })
-            .catch(() => {
-                this.isoCountryCodeDisplayed = '';
-            });
+            getISOCountryByCountryCode({ countryCode: value })
+                .then((result) => {
+                    this.isoCountryCodeDisplayed = result;
+                })
+                .catch(() => {
+                    this.isoCountryCodeDisplayed = "";
+                });
         }
     }
 
-    // Import xlsx  
+    // Import xlsx
     openImportModal() {
         this.importModalIsShow = true;
     }
@@ -557,10 +534,10 @@ export default class DataTableComponent extends LightningElement {
         this.importModalIsShow = false;
     }
 
-    handleUploadExcel(event){
+    handleUploadExcel(event) {
         this.isImportSuccess = false;
         const uploadedFiles = event.target.files;
-        if(uploadedFiles.length > 0) {
+        if (uploadedFiles.length > 0) {
             this.fileXlsx = uploadedFiles[0];
             this.excelToJSON(this.fileXlsx);
         }
@@ -569,119 +546,106 @@ export default class DataTableComponent extends LightningElement {
     getFirstSheetData(workbook) {
         var result = {};
         if (workbook.SheetNames.length > 0) {
-            let roa = XLS.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header:1});
-            if(roa.length && Array.isArray(roa)) {
+            let roa = XLS.utils.sheet_to_json(
+                workbook.Sheets[workbook.SheetNames[0]],
+                { header: 1 }
+            );
+            if (roa.length && Array.isArray(roa)) {
                 roa.shift();
                 result = roa;
             }
         }
-		return result;
+        return result;
     }
 
-    excelToJSON(file){
+    excelToJSON(file) {
         var reader = new FileReader();
-        reader.onload = event => {
-            let data=event.target.result;
-            let workbook=XLS.read(data, {
-                type: 'binary'
+        reader.onload = (event) => {
+            let data = event.target.result;
+            let workbook = XLS.read(data, {
+                type: "binary"
             });
             var jsonObj = this.getFirstSheetData(workbook);
             jsonObj = jsonObj.filter((row) => {
                 return row.length > 0;
-            })
+            });
             this.xlsxImportData = jsonObj;
             console.log(jsonObj);
         };
-        reader.onerror = function(ex) {
-            this.error=ex;
+        reader.onerror = function (ex) {
+            this.error = ex;
             this.dispatchEvent(
                 new ShowToastEvent({
-                    title: 'Error while reding the file',
+                    title: "Error while reding the file",
                     message: ex.message,
-                    variant: 'error',
-                }),
+                    variant: "error"
+                })
             );
         };
         reader.onloadend = () => {
             this.fileXlsxReady = true;
             this.fileXlsxLoading = false;
             this.fileXlsxName = file.name;
-        }
+        };
 
         reader.onloadstart = () => {
             this.fileXlsxReady = false;
             this.fileXlsxLoading = true;
-        }
+        };
 
         reader.readAsBinaryString(file);
     }
 
     async importExcelHandle() {
-        console.log('Size Object: ' + this.roughSizeOfObject(this.xlsxImportData));
-        let importSuccess = true;
-        let rowsError = [];
-        const BLOCK_SIZE  = 500;
-        let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
+        console.log(
+            "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
+        );
+        const BLOCK_SIZE = 200;
+        Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
         // TODO
-        let handleResult = (result) => {
-            // console.log(result);
-            let rsObject = JSON.parse(result);
-            if (!rsObject.success) {
-                importSuccess = false;
-                rowsError.push(rsObject.indexsErrorRecord);
-            }
-            if (--totalBlock === 0) {
-                console.log(`success: ${importSuccess}\n`);
-                if (!importSuccess) {
-                    console.log(rowsError.toString());
-                }
-                this.isInImportProcess = false;
-                this.isImportSuccess = true;
-                this.fileXlsxLoading = false;
-            }
-        }
-        for (let i = 0; i < this.xlsxImportData.length; i+= BLOCK_SIZE) {
+        let promises = [];
+        for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
             // eslint-disable-next-line no-await-in-loop
-            await importFromExcel({data: this.xlsxImportData.slice(i, i + BLOCK_SIZE), startIndex: i})
-            .then(handleResult)
-            .catch (error => {
-                console.log(error);
-                this.isInImportProcess = false;
-                this.isImportSuccess = false;
-                this.fileXlsxLoading = false;
-            });
+            promises.push(
+                importFromExcel({
+                    data: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
+                    startIndex: i
+                })
+            );
         }
+
+        Promise.all(promises)
+            .then((values) => {
+                console.log(values);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
     }
 
-    roughSizeOfObject( object ) {
-
+    roughSizeOfObject(object) {
         var objectList = [];
-        var stack = [ object ];
+        var stack = [object];
         var bytes = 0;
-    
-        while ( stack.length ) {
+
+        while (stack.length) {
             var value = stack.pop();
-    
-            if ( typeof value === 'boolean' ) {
+
+            if (typeof value === "boolean") {
                 bytes += 4;
-            }
-            else if ( typeof value === 'string' ) {
+            } else if (typeof value === "string") {
                 bytes += value.length * 2;
-            }
-            else if ( typeof value === 'number' ) {
+            } else if (typeof value === "number") {
                 bytes += 8;
-            }
-            else if
-            (
-                typeof value === 'object'
-                && objectList.indexOf( value ) === -1
-            )
-            {
-                objectList.push( value );
-    
-                for( var i in value ) {
-                    stack.push( value[ i ] );
+            } else if (
+                typeof value === "object" &&
+                objectList.indexOf(value) === -1
+            ) {
+                objectList.push(value);
+
+                for (var i in value) {
+                    stack.push(value[i]);
                 }
             }
         }
@@ -690,14 +654,12 @@ export default class DataTableComponent extends LightningElement {
 
     handleChangeInput = (e) => {
         console.log(e.target.value);
-        getISOCountryByCountryCode({countryCode: e.target.value})
-        .then((result) => {
-            this.isoCountryCodeDisplayed = result;
-        })
-        .catch(() => {
-            this.isoCountryCodeDisplayed = '';
-        });
-    }
-
-
+        getISOCountryByCountryCode({ countryCode: e.target.value })
+            .then((result) => {
+                this.isoCountryCodeDisplayed = result;
+            })
+            .catch(() => {
+                this.isoCountryCodeDisplayed = "";
+            });
+    };
 }

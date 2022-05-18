@@ -33,4 +33,18 @@ public with sharing class LqpCountryHelpers {
             return null;
         }
     }
+
+    @AuraEnabled
+    public static List<M_Country__c> searhForCountry(String pattern){
+        try {
+            List<M_Country__c> listCountry = new List<M_Country__c>();
+            if (M_Country__c.sObjectType.getDescribe().isAccessible()){
+                String likePattern = '%' + pattern + '%';
+                listCountry = [SELECT Name, Country__c FROM M_Country__c WHERE Name LIKE :likePattern];
+            }
+            return listCountry;
+        } catch (Exception e) {
+            throw new AuraHandledException(e.getMessage());
+        }
+    }
 }
