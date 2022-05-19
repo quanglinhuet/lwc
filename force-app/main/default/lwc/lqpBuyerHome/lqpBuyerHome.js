@@ -146,7 +146,7 @@ export default class DataTableComponent extends LightningElement {
     @track fileXlsxLoading = false;
     @track allCountry = [];
     @track isInImportProcess = false;
-    @track isImportSuccess = null;
+    @track isImportSuccess = false;
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
@@ -600,28 +600,36 @@ export default class DataTableComponent extends LightningElement {
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
+        let startTime = performance.now();
         const BLOCK_SIZE = 200;
-        Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
+        const REQUESTS_PER_TIME = 2;
+        let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
-        // TODO
         let promises = [];
+        let count = 0;
         for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
-            // eslint-disable-next-line no-await-in-loop
+            count ++;
             promises.push(
                 importFromExcel({
                     data: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
                     startIndex: i
                 })
             );
+            if (count % REQUESTS_PER_TIME === 0 || count === totalBlock) {
+                // eslint-disable-next-line no-await-in-loop
+                await Promise.allSettled(promises);
+            }
         }
-
-        Promise.all(promises)
+        await Promise.all(promises)
             .then((values) => {
                 console.log(values);
+                this.isImportSuccess = true;
+                this.fileXlsxLoading = false;
             })
             .catch((error) => {
                 console.log(error);
             });
+        console.log (`Total time: ${performance.now() - startTime}`);   
     }
 
     roughSizeOfObject(object) {
