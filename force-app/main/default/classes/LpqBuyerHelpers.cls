@@ -140,6 +140,7 @@ public with sharing class LpqBuyerHelpers {
                 }
             }
         } catch (Exception e) {
+            // Try second time
             result.success = true;
             result.indexsErrorRecord = new List<Integer>();
             if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
@@ -151,7 +152,7 @@ public with sharing class LpqBuyerHelpers {
                     }
                 }
             }
-            result.indexsErrorRecord.add(01041998);
+            // result.indexsErrorRecord.add(01041998);
         } 
         Integer heap4 = Limits.getHeapSize();
         if (!result.success) {
