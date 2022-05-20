@@ -596,19 +596,21 @@ export default class DataTableComponent extends LightningElement {
         reader.readAsBinaryString(file);
     }
 
+
+
     async importExcelHandle() {
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
         let startTime = performance.now();
-        const BLOCK_SIZE = 200;
-        const REQUESTS_PER_TIME = 2;
+        const BLOCK_SIZE = 500;
+        const REQUESTS_PER_TIME = 5;
         let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
         let promises = [];
         let count = 0;
         for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
-            count ++;
+            count++;
             promises.push(
                 importFromExcel({
                     data: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
@@ -638,7 +640,7 @@ export default class DataTableComponent extends LightningElement {
         var bytes = 0;
 
         while (stack.length) {
-            var value = stack.pop();
+            let value = stack.pop();
 
             if (typeof value === "boolean") {
                 bytes += 4;
@@ -652,7 +654,8 @@ export default class DataTableComponent extends LightningElement {
             ) {
                 objectList.push(value);
 
-                for (var i in value) {
+                // eslint-disable-next-line guard-for-in
+                for (let i in value) {
                     stack.push(value[i]);
                 }
             }

@@ -2,20 +2,44 @@ import { LightningElement, track, wire } from 'lwc';
 import { refreshApex } from "@salesforce/apex";
 import fetchDataList from '@salesforce/apex/LpqBuyerHelpers.fetchDataList';
 import editRecordsInList from '@salesforce/apex/LpqBuyerHelpers.editRecordsInList';
+import {loadStyle} from 'lightning/platformResourceLoader'
+import lpqresource from "@salesforce/resourceUrl/lpqresource";
 
 export default class DatatableTest extends LightningElement {
     @track draftValues = [];
     @track dataTable;
     @track rowOffset = 0;
     @track isEdit = false;
+    @track isCssLoaded = false;
 
     // 属性にはテーブルヘッダー情報が含まれています
     @track columns = [
         { label: "Buyer Code", fieldName: "BuyerCode", type: "text", initialWidth: 150, editable: false },
         { label: "Buyer Address", fieldName: "BuyerAddress", type: "text", initialWidth: 300, editable: false },
         { label: "Country Code", fieldName: "CountryCode", initialWidth: 150,  type: "text", editable: false },
-        { label: "ISO Country Code", fieldName: "ISOCountryCode", initialWidth: 150, type: "text" }
+        { 
+            label: "PointTest", 
+            fieldName: "PointTest", 
+            initialWidth: 150, 
+            type: "number", 
+            editable: false, 
+            cellAttributes: {
+                class: {fieldName: 'PointValid'}
+            } 
+        },
+        { label: "ISO Country Code", fieldName: "ISOCountryCode", initialWidth: 150, type: "text" },
     ];
+
+    renderedCallback(){ 
+        if(this.isCssLoaded) return
+        this.isCssLoaded = true
+        loadStyle(this, lpqresource + "/style/customDatatableStyle.css").then(()=>{
+            console.log("Loaded Successfully")
+        }).catch(error=>{ 
+            console.error("Error in loading the colors");
+            console.log(error);
+        })
+    }
 
     /**
      * Get data for list
@@ -43,6 +67,10 @@ export default class DatatableTest extends LightningElement {
                 ) {
                     viewRecord.ISOCountryCode =
                         record.ISOCountryCode_Alphabet3__r.Name;
+                }
+                if (record.PointTest__c != null && record.PointTest__c !== undefined) {
+                    viewRecord.PointTest = record.PointTest__c;
+                    viewRecord.PointValid = record.PointTest__c <= 99 ? 'background-color-red' : '';
                 }
                 return viewRecord;
             });

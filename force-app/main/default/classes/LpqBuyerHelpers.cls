@@ -1,22 +1,4 @@
 public with sharing class LpqBuyerHelpers {
-    // Map country code to : [Id_Country, Id_CountryCode ]
-    static private Map<String, List<String>> mapOfCountrys;
-    
-    static{
-        LpqBuyerHelpers.mapOfCountrys = new Map<String, List<String>>();
-        if (M_Country__c.getSObjectType().getDescribe().isAccessible()) {
-            List<M_Country__c> listTemp = new List<M_Country__c>();
-            listTemp = [SELECT Name ,Id,ISOCounteyCode_Alphabet3__r.Id FROM M_Country__c];
-            for (M_Country__c country : listTemp) {
-                List<String> lstId = new List<String>();
-                lstId.add(country.Id);
-                if (country.ISOCounteyCode_Alphabet3__r.Id != null) {
-                    lstId.add(country.ISOCounteyCode_Alphabet3__r.Id);
-                }
-                mapOfCountrys.put(country.Name, lstId);
-            }
-        }
-    }
 
     @AuraEnabled(cacheable = true)
     public static List<M_Buyer__c> fetchDataList(Integer offsetNum, Integer limitNum){
@@ -26,7 +8,8 @@ public with sharing class LpqBuyerHelpers {
                     Name,
                     BuyerAddress__c,
                     CountryCode__r.Name,
-                    ISOCountryCode_Alphabet3__r.Name
+                    ISOCountryCode_Alphabet3__r.Name,
+                    PointTest__c
                 FROM M_Buyer__c
                 WITH SECURITY_ENFORCED
                 LIMIT :limitNum
@@ -96,7 +79,8 @@ public with sharing class LpqBuyerHelpers {
                     .replace('"Id":', '"id":')
                     .replace('"BuyerCode":', '"buyerCode":')
                     .replace('"BuyerAddress":', '"buyerAddress":') 
-                    .replace('"CountryCode":', '"countryCode":'),
+                    .replace('"CountryCode":', '"countryCode":')
+                    .replace('"PointTest":', '"pointTest":'),
                 LpqBuyerDataEdit.class
             );
             buyer.Id = Id.valueOf(dataObj.Id);
@@ -125,6 +109,9 @@ public with sharing class LpqBuyerHelpers {
                     return null;
                 }
             }
+            if (dataObj.pointTest != null) {
+                buyer.PointTest__c = dataObj.pointTest;
+            }
             return buyer;
         } catch (Exception e) {
             return null;
@@ -137,16 +124,38 @@ public with sharing class LpqBuyerHelpers {
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
         List<List<String>> listData = new List<List<String>>();
+        Integer heep1 = Limits.getHeapSize();
         listData = (List<List<String>>) JSON.deserialize(JSON.serialize(data), List<List<String>>.class);
+        Integer heep2 = Limits.getHeapSize();
         List<M_Buyer__c> listBuyerImport = convertListDataImportToListBuyer(listData);
-        if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
-            Database.SaveResult[] sr = Database.insert(listBuyerImport, false);
-            for (Integer i = 0; i < sr.size(); i++) {
-                if (!sr.get(i).success) {
-                    result.success = false;
-                    result.indexsErrorRecord.add(i + startIndex);
+        Integer heep3 = Limits.getHeapSize();
+        try {
+            if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
+                Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
+                for (Integer i = 0; i < sr.size(); i++) {
+                    if (!sr.get(i).success) {
+                        result.success = false;
+                        result.indexsErrorRecord.add(i + startIndex);
+                    }
                 }
             }
+        } catch (Exception e) {
+            result.success = true;
+            result.indexsErrorRecord = new List<Integer>();
+            if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
+                Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
+                for (Integer i = 0; i < sr.size(); i++) {
+                    if (!sr.get(i).success) {
+                        result.success = false;
+                        result.indexsErrorRecord.add(i + startIndex);
+                    }
+                }
+            }
+            result.indexsErrorRecord.add(01041998);
+        } 
+        Integer heap4 = Limits.getHeapSize();
+        if (!result.success) {
+            Integer a =1;
         }
         return JSON.deserializeUntyped(JSON.serialize(result));
     }
@@ -157,9 +166,10 @@ public with sharing class LpqBuyerHelpers {
     private static List<M_Buyer__c> convertListDataImportToListBuyer(List<List<String>> listData) {
         List<M_Buyer__c> listBuyer = new List<M_Buyer__c>();
         Map<String,Id> mapOfCompany = LpqBuyerHelpers.getMapOfCompanys();
+        Map<String, List<Id>> mapOfCountry = LpqBuyerHelpers.getMapOfBuyerCountries();
         // data: ["buyer", "address", "buyer code", "country code", "order company code"]
         for (List<String> data : listData) {
-            M_Buyer__c newBuyer = convertDataRecordToBuyer(data, mapOfCompany);
+            M_Buyer__c newBuyer = convertDataRecordToBuyer(data, mapOfCompany, mapOfCountry);
             if (newBuyer != null) {
                 listBuyer.add(newBuyer);
             }
@@ -179,7 +189,7 @@ public with sharing class LpqBuyerHelpers {
         return mapOfCompany;
     }
 
-    private static M_Buyer__c convertDataRecordToBuyer (List<String> data, Map<String,Id> mapOfCompany) {
+    private static M_Buyer__c convertDataRecordToBuyer (List<String> data, Map<String,Id> mapOfCompany, Map<String, List<Id>> mapOfCountries) {
         if (data.size() < 5) {
             return null;
         } 
@@ -192,8 +202,8 @@ public with sharing class LpqBuyerHelpers {
         }
         buyer.Name = data.get(2);
         if (data.get(3) != null) {
-            buyer = LpqBuyerHelpers.assignContryAttribute(buyer, data.get(3));
-        } else if (data.get(3) != null && !LpqBuyerHelpers.mapOfCountrys.containsKey(data.get(3))){
+            buyer = LpqBuyerHelpers.assignContryAttribute(buyer, data.get(3), mapOfCountries);
+        } else if (data.get(3) != null && !mapOfCountries.containsKey(data.get(3))){
             return null;
         }
         if (data.get(4) != null && mapOfCompany.containsKey(data.get(4))) {
@@ -204,12 +214,28 @@ public with sharing class LpqBuyerHelpers {
         return buyer;
     }
 
-    private static M_Buyer__c assignContryAttribute(M_Buyer__c buyer, String countryCode) {
-        List<String> listId = LpqBuyerHelpers.mapOfCountrys.get(countryCode);
-        buyer.CountryCode__c = Id.valueOf(listId.get(0));
+    private static M_Buyer__c assignContryAttribute(M_Buyer__c buyer, String countryCode, Map<String, List<Id>> mapOfCountries) {
+        List<Id> listId = mapOfCountries.get(countryCode);
+        buyer.CountryCode__c = listId.get(0);
         if (listId.size() > 1) {
-            buyer.ISOCountryCode_Alphabet3__c = Id.valueOf(listId.get(1));
+            buyer.ISOCountryCode_Alphabet3__c = listId.get(1);
         }
         return buyer;
+    }
+
+    private static Map<String, List<Id>> getMapOfBuyerCountries() {
+        Map<String, List<Id>> mapOfCountries = new Map<String, List<Id>>();
+        if (M_Country__c.getSObjectType().getDescribe().isAccessible()) {
+            List<M_Country__c> listTemp = [SELECT Name ,Id,ISOCounteyCode_Alphabet3__r.Id FROM M_Country__c];
+            for (M_Country__c country : listTemp) {
+                List<Id> lstId = new List<Id>();
+                lstId.add(country.Id);
+                if (country.ISOCounteyCode_Alphabet3__r.Id != null) {
+                    lstId.add(country.ISOCounteyCode_Alphabet3__r.Id);
+                }
+                mapOfCountries.put(country.Name, lstId);
+            }
+        }
+        return mapOfCountries;
     }
 }
