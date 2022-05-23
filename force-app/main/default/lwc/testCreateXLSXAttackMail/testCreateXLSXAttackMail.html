@@ -1,0 +1,10 @@
+<template>
+    <div class='send-mail'>
+        <lightning-input type="text" label="Numbers of record" value = {numberOfRecord} onchange={handleInputChange}></lightning-input>
+        <lightning-button onclick={createXlsx} label="CreateXlsx"></lightning-button>
+        <div>
+            <a href={url} download = "test.xlsx" if:true={XLSXReady}>download</a>
+            <lightning-button onclick={sendMail} label="Send Mail" if:true={XLSXReady}></lightning-button>
+        </div>
+    </div>
+</template>
