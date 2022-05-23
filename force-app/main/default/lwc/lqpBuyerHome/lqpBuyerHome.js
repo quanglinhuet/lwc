@@ -606,8 +606,8 @@ export default class DataTableComponent extends LightningElement {
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
         let startTime = performance.now();
-        const BLOCK_SIZE = 7000;
-        const REQUESTS_PER_TIME = 1;
+        const BLOCK_SIZE = 500;
+        const REQUESTS_PER_TIME = 6;
         let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
         let promises = [];

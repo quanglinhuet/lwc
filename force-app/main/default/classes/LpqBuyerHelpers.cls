@@ -129,35 +129,39 @@ public with sharing class LpqBuyerHelpers {
         Integer heep2 = Limits.getHeapSize();
         List<M_Buyer__c> listBuyerImport = convertListDataImportToListBuyer(listData);
         Integer heep3 = Limits.getHeapSize();
-        try {
-            if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
-                Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
-                for (Integer i = 0; i < sr.size(); i++) {
-                    if (!sr.get(i).success) {
-                        result.success = false;
-                        result.indexsErrorRecord.add(i + startIndex);
-                    }
+        // Integer tryLeft = 3; // Try total 3 time
+        // while (tryLeft > 0) {
+        //     result.success = true;
+        //     try {
+        //         if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
+        //             Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
+        //             for (Integer i = 0; i < sr.size(); i++) {
+        //                 if (!sr.get(i).success) {
+        //                     result.success = false;
+        //                     result.indexsErrorRecord.add(i + startIndex);
+        //                 }
+        //             }
+        //             if (result.success) {
+        //                 break;
+        //             }
+        //         }
+        //     } catch (Exception e) {
+        //         tryLeft --;
+        //     }
+        // }
+        // if (tryLeft <= 0) {
+        //     result.success = false;
+        // } 
+        if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
+            Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
+            for (Integer i = 0; i < sr.size(); i++) {
+                if (!sr.get(i).success) {
+                    result.success = false;
+                    result.indexsErrorRecord.add(i + startIndex);
                 }
             }
-        } catch (Exception e) {
-            // Try second time
-            result.success = true;
-            result.indexsErrorRecord = new List<Integer>();
-            if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
-                Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
-                for (Integer i = 0; i < sr.size(); i++) {
-                    if (!sr.get(i).success) {
-                        result.success = false;
-                        result.indexsErrorRecord.add(i + startIndex);
-                    }
-                }
-            }
-            // result.indexsErrorRecord.add(01041998);
-        } 
-        Integer heap4 = Limits.getHeapSize();
-        if (!result.success) {
-            Integer a =1;
         }
+        Integer heap4 = Limits.getHeapSize();
         return JSON.deserializeUntyped(JSON.serialize(result));
     }
 
