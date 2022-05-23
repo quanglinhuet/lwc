@@ -603,8 +603,8 @@ export default class DataTableComponent extends LightningElement {
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
         let startTime = performance.now();
-        const BLOCK_SIZE = 500;
-        const REQUESTS_PER_TIME = 5;
+        const BLOCK_SIZE = 1000;
+        const REQUESTS_PER_TIME = 1;
         let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
         let promises = [];
@@ -613,7 +613,7 @@ export default class DataTableComponent extends LightningElement {
             count++;
             promises.push(
                 importFromExcel({
-                    data: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
+                    listData: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
                     startIndex: i
                 })
             );

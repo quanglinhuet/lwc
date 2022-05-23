@@ -119,47 +119,26 @@ public with sharing class LpqBuyerHelpers {
     }
 
     @AuraEnabled
-    public static Object importFromExcel(Object data, Integer startIndex){
+    public static Object importFromExcel(List<List<String>> listData, Integer startIndex){
         LpqImportResult result = new LpqImportResult();
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
-        List<List<String>> listData = new List<List<String>>();
-        Integer heep1 = Limits.getHeapSize();
-        listData = (List<List<String>>) JSON.deserialize(JSON.serialize(data), List<List<String>>.class);
-        Integer heep2 = Limits.getHeapSize();
+        Integer lengthListData = listData.size();
+        Integer heapNew = Limits.getHeapSize();
         List<M_Buyer__c> listBuyerImport = convertListDataImportToListBuyer(listData);
-        Integer heep3 = Limits.getHeapSize();
-        try {
-            if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
-                Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
-                for (Integer i = 0; i < sr.size(); i++) {
-                    if (!sr.get(i).success) {
-                        result.success = false;
-                        result.indexsErrorRecord.add(i + startIndex);
-                    }
+        Integer heapNew1 = Limits.getHeapSize();
+        if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
+            Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
+            for (Integer i = 0; i < sr.size(); i++) {
+                if (!sr.get(i).success) {
+                    result.success = false;
+                    result.indexsErrorRecord.add(i + startIndex);
                 }
             }
-        } catch (Exception e) {
-            result.success = true;
-            result.indexsErrorRecord = new List<Integer>();
-            if (M_Buyer__c.SObjectType.getDescribe().isCreateable()) {
-                Database.SaveResult[] sr = Database.insert(listBuyerImport, true);
-                for (Integer i = 0; i < sr.size(); i++) {
-                    if (!sr.get(i).success) {
-                        result.success = false;
-                        result.indexsErrorRecord.add(i + startIndex);
-                    }
-                }
-            }
-            result.indexsErrorRecord.add(01041998);
-        } 
-        Integer heap4 = Limits.getHeapSize();
-        if (!result.success) {
-            Integer a =1;
         }
+        Integer heapNew2 = Limits.getHeapSize();
         return JSON.deserializeUntyped(JSON.serialize(result));
     }
-
     /**
      * convert list data import to list SObject
      */
