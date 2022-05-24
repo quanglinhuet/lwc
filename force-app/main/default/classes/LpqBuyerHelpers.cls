@@ -123,7 +123,6 @@ public with sharing class LpqBuyerHelpers {
         LpqImportResult result = new LpqImportResult();
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
-        Integer lengthListData = listData.size();
         Integer heapNew = Limits.getHeapSize();
         List<M_Buyer__c> listBuyerImport = convertListDataImportToListBuyer(listData);
         Integer heapNew1 = Limits.getHeapSize();
