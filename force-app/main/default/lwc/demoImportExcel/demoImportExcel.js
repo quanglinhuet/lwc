@@ -1,9 +1,10 @@
-import { LightningElement, track } from "lwc";
+import { LightningElement, track, wire } from "lwc";
 
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { loadScript } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
 import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
+import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
 
 let XLS = {};
 
@@ -23,6 +24,8 @@ export default class DemoImportExcel extends LightningElement {
         return this.fileXlsxReady && !this.isInImportProcess;
     }
 
+    @wire(getSampleFieldsInfo)
+    fieldsInfo;
 
     connectedCallback() {
         // Loading sheetjs library
@@ -126,11 +129,12 @@ export default class DemoImportExcel extends LightningElement {
 
 
     async importExcelHandle() {
+        // Validate FrontEnd
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
         let startTime = performance.now();
-        const BLOCK_SIZE = 1100;
+        const BLOCK_SIZE = 10000;
         const REQUESTS_PER_TIME = 1;
         console.log(`Block size: ${BLOCK_SIZE}`);
         let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
