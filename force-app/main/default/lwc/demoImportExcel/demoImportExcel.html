@@ -26,7 +26,7 @@
           <div class="slds-modal__container">
             <header class="slds-modal__header">
               <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
-                onclick={closeImportModal}>
+                onclick={handleCloseImportModal}>
                 <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small">
                 </lightning-icon>
               </button>
@@ -69,7 +69,7 @@
               <lightning-button variant="brand" label="Start Import" if:false={importEnable} disabled>
               </lightning-button>
               <lightning-button class="import-modal-close" variant="brand" label="Close" title="Close"
-                onclick={closeImportModal}></lightning-button>
+                onclick={handleCloseImportModal}></lightning-button>
             </footer>
           </div>
         </section>

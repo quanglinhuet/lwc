@@ -19,13 +19,20 @@ export default class DemoImportExcel extends LightningElement {
     @track allCountry = [];
     @track isInImportProcess = false;
     @track isImportSuccess = false;
+    @track excelHeader;
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
     }
 
     @wire(getSampleFieldsInfo)
-    fieldsInfo;
+    wiredFieldsInfo({error, data}) {
+        if (data) {
+            this.fieldsInfo = data;
+        } else if (error) {
+            console.log(error);
+        }
+    }
 
     connectedCallback() {
         // Loading sheetjs library
@@ -60,7 +67,7 @@ export default class DemoImportExcel extends LightningElement {
         this.importModalIsShow = true;
     }
 
-    closeImportModal() {
+    handleCloseImportModal() {
         this.importModalIsShow = false;
     }
 
@@ -81,6 +88,7 @@ export default class DemoImportExcel extends LightningElement {
                 { header: 1 }
             );
             if (roa.length && Array.isArray(roa)) {
+                this.excelHeader = [...roa[0]];
                 roa.shift();
                 result = roa;
             }
@@ -130,6 +138,13 @@ export default class DemoImportExcel extends LightningElement {
 
     async importExcelHandle() {
         // Validate FrontEnd
+        let validateResult = this.validateExcelInput();
+
+        if (!validateResult.valid) {
+            // export excel
+            console.log(validateResult.errors);
+            return;
+        } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
@@ -146,7 +161,8 @@ export default class DemoImportExcel extends LightningElement {
             promises.push(
                 importObjectFromExcel({
                     listData: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
-                    startIndex: i
+                    startIndex: i,
+                    headers: [...this.excelHeader]
                 })
             );
             if (count % REQUESTS_PER_TIME === 0 || count === totalBlock) {
@@ -193,5 +209,73 @@ export default class DemoImportExcel extends LightningElement {
             }
         }
         return bytes;
+    
+    }
+
+    validateExcelInput() {
+        const types = [];
+        let valid = true;
+        let errors = new Map();
+        let fieldsInfo = [...this.fieldsInfo];
+        this.excelHeader.forEach((header) => {
+            types.push(fieldsInfo.find((item) => {
+                return item.fieldLabel === header;
+            }));
+        });
+        this.xlsxImportData.forEach((element, index) => {
+            let rowValidateErrorObject = this.validateRow(element, types);
+            if (rowValidateErrorObject) {
+                valid = false;
+                errors.set(index, rowValidateErrorObject);
+            }
+        });
+
+        return {
+            valid : valid,
+            errors: errors
+        }
+    }
+
+    validateRow(row, types) {
+        let rowValid = true;
+        let message = {};
+        let invalidColumns = [];
+        
+        for (let i = 0; i < row.length; i++) {
+            let cellValidateError = this.validateCell(row[i], types[i]);
+            if (cellValidateError != null) {
+                rowValid = false;
+                message[this.excelHeader[i]] = cellValidateError;
+                invalidColumns.push(i);
+            }
+        }
+
+        if(rowValid) {
+            return null;
+        }
+
+        return {
+            invalidColumns: invalidColumns,
+            message: JSON.stringify(message)
+        };
+    }
+
+    validateCell(value, type) {
+        if (type) {
+            if (!value && type.isRequired) {
+                return 'Must not empty';
+            }
+    
+            // type demo : String, number
+            if (value && (type.type === 'NUMBER' && isNaN(+value) || (type.type === 'STRING' && typeof value !== 'string'))) {
+                return 'Type invalid';
+            }
+    
+            // length
+            if ((value+'').length > type.length) {
+                return 'Length error';
+            }
+        }
+        return null;
     }
 }

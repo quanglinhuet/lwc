@@ -1,7 +1,7 @@
 public with sharing class ImportExcelDemo {
 
     @AuraEnabled
-    public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex){
+    public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
         LpqImportResult result = new LpqImportResult();
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
@@ -33,10 +33,15 @@ public with sharing class ImportExcelDemo {
         String jsonString = '';
         for (List<String> data : listData) {
             jsonString = '{';
+            Boolean first = true;
             for (Integer i = 0; i < data.size(); i++) {
-                jsonString += '"'+listFieldExcel.get(i)+'":"'+data.get(i)+'"';
-                if (i != data.size() - 1) {
-                    jsonString += ',';
+                if (data.get(i) != null) {
+                    if(first) {
+                        jsonString += '"'+listFieldExcel.get(i)+'":"'+data.get(i)+'"';
+                        first = false;
+                    } else {
+                        jsonString += ',"'+listFieldExcel.get(i)+'":"'+data.get(i)+'"';
+                    }
                 }
             }
             jsonString += '}';
