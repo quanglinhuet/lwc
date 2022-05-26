@@ -1,0 +1,16 @@
+
+.file-loading-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+}
+
+.file-loading-area .status-icon {
+    margin-bottom: 20px;
+}
+
+.import-modal-close {
+    margin-left: 15px;
+}
