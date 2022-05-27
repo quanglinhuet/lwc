@@ -7,7 +7,7 @@ public with sharing class ImportExcelDemo {
         result.indexsErrorRecord = new List<Integer>();
         Integer heapNew = Limits.getHeapSize();
         // Validate backend here
-
+        LpqImportResult resultValidate = validateBE(listData, headers);
         List<sample2__c> listBuyerImport = convertListDataImportToListSampleObject(listData);
         // Tinh Toan luu record bi loi vao customobject, neu tinh toan loi => 
 
@@ -123,4 +123,25 @@ public with sharing class ImportExcelDemo {
         return listFieldInfo;
     }
     
+    public static LpqImportResult validateBE(List<List<String>> listData, List<String> headers) {
+        LpqImportResult result;
+        Map<Integer, String> validateErrorMessages;
+        Map<Integer, List<Integer>> validateErrorCollumns;
+        List<FieldValidateConditionEntity> listFieldInfor = new List<FieldValidateConditionEntity>();
+        listFieldInfor = getSampleFieldsInfoApex();
+        listFieldInfor = sort(listFieldInfor, headers);
+        for(List<String> listDataEachColumn: listData ){
+            for(String dataEachColumn: listDataEachColumn){
+                for(FieldValidateConditionEntity field: listFieldInfor) {
+
+                }
+            }
+        }
+        return result;
+    }
+    public List<FieldValidateConditionEntity> sort(List<FieldValidateConditionEntity> listFieldInfor, List<String> headers) {
+        List<FieldValidateConditionEntity> result;
+        for()
+        return result;
+    }
 }
