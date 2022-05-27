@@ -2,12 +2,26 @@ public with sharing class ImportExcelDemo {
 
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
-        LpqImportResult result = new LpqImportResult();
+        LpqImportResult result = ValidateBackendDemo.validateBE(listData, headers);
+        if (!result.isInputValid) {
+            System.debug('=== List record error: ');
+            for (Integer i: result.indexsErrorRecord) {
+                System.debug(i);
+                System.debug(', ');
+            }
+            System.debug('\n \n');
+            System.debug('=== List message error: ');
+            System.debug(result.validateErrorMessages.toString());
+            System.debug('\n \n');
+            System.debug('=== List column error: ');
+            System.debug(result.validateErrorCollumns.toString());
+            
+            return result.validateErrorMessages.values();
+        }
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
         Integer heapNew = Limits.getHeapSize();
         // Validate backend here
-
         List<sample2__c> listBuyerImport = convertListDataImportToListSampleObject(listData);
         // Tinh Toan luu record bi loi vao customobject, neu tinh toan loi => 
 

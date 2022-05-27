@@ -42,7 +42,7 @@ export default class DemoImportExcel extends LightningElement {
 
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.core.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
             .then(() => {
                 // eslint-disable-next-line no-undef
                 XLS = XLSX;
@@ -148,15 +148,15 @@ export default class DemoImportExcel extends LightningElement {
     async importExcelHandle() {
         // Validate FrontEnd
         this.invalidExcel = false;
-        let validateResult = this.validateExcelInput();
+        // let validateResult = this.validateExcelInput();
 
-        if (!validateResult.valid) {
-            // export excel
-            // console.log(validateResult.errors);
-            this.invalidExcel = true;
-            this.showExcelValidateError(validateResult.errors);
-            return;
-        } 
+        // if (!validateResult.valid) {
+        //     // export excel
+        //     // console.log(validateResult.errors);
+        //     this.invalidExcel = true;
+        //     this.showExcelValidateError(validateResult.errors);
+        //     return;
+        // } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
