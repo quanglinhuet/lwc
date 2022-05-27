@@ -117,7 +117,7 @@ export default class DemoImportExcel extends LightningElement {
                 return row.length > 0;
             });
             this.xlsxImportData = jsonObj;
-            console.log(jsonObj);
+            // console.log(jsonObj);
         };
         reader.onerror = function (ex) {
             this.error = ex;
@@ -330,7 +330,7 @@ export default class DemoImportExcel extends LightningElement {
             return rowData;
         });
         data = [...data, ...rows];
-        console.log(data);
+        // console.log(data);
         await writeExcel(data, {
             fileName: 'file.xlsx'
         })
