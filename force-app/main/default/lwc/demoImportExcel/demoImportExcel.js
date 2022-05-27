@@ -7,6 +7,7 @@ import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObject
 import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
 
 let XLS = {};
+let writeExcel = {};
 
 export default class DemoImportExcel extends LightningElement {
 
@@ -16,10 +17,15 @@ export default class DemoImportExcel extends LightningElement {
     @track fileXlsxName;
     @track fileXlsxReady = false;
     @track fileXlsxLoading = false;
+    @track fileContent = null;
     @track allCountry = [];
     @track isInImportProcess = false;
     @track isImportSuccess = false;
     @track excelHeader;
+
+    // File error
+    @track invalidExcel = false;
+    @track urlErrorExcel;
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
@@ -36,10 +42,12 @@ export default class DemoImportExcel extends LightningElement {
 
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")])
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.core.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
             .then(() => {
                 // eslint-disable-next-line no-undef
                 XLS = XLSX;
+                // eslint-disable-next-line no-undef
+                writeExcel = writeXlsxFile;
             })
             .catch(() => {
                 console.log("loading SheetJS library failue!");
@@ -100,10 +108,11 @@ export default class DemoImportExcel extends LightningElement {
         var reader = new FileReader();
         reader.onload = (event) => {
             let data = event.target.result;
+            this.fileContent = data;
             let workbook = XLS.read(data, {
                 type: "binary"
             });
-            var jsonObj = this.getFirstSheetData(workbook);
+            let jsonObj = this.getFirstSheetData(workbook);
             jsonObj = jsonObj.filter((row) => {
                 return row.length > 0;
             });
@@ -138,11 +147,14 @@ export default class DemoImportExcel extends LightningElement {
 
     async importExcelHandle() {
         // Validate FrontEnd
+        this.invalidExcel = false;
         let validateResult = this.validateExcelInput();
 
         if (!validateResult.valid) {
             // export excel
-            console.log(validateResult.errors);
+            // console.log(validateResult.errors);
+            this.invalidExcel = true;
+            this.showExcelValidateError(validateResult.errors);
             return;
         } 
         console.log(
@@ -277,5 +289,50 @@ export default class DemoImportExcel extends LightningElement {
             }
         }
         return null;
+    }
+
+    async showExcelValidateError (errors) {
+        const wb = XLS.read(this.fileContent, {
+            type: "binary"
+        });
+        let ws = wb.Sheets[wb.SheetNames[0]];
+        let sheetJson = XLS.utils.sheet_to_json(ws, {
+            header: 1,
+            raw: true
+        });
+        
+        let data = [];
+        let header = sheetJson[0].map((elem) => {
+            return {
+                value: elem
+            }
+        });
+        header.push({value: 'エラー内容'});
+        data.push(header);
+        sheetJson.splice(0, 1);
+        let rows = sheetJson.map((row, index) => {
+            let rowDataTemp = [...row];
+            let rowData = []
+            for (let i = 0; i < header.length; i++) {
+                let temp = {
+                    type: String,
+                    value: rowDataTemp[i]
+                };
+                rowData.push(temp);
+            }
+            if (errors.has(index)) {
+                let error = errors.get(index);
+                rowData[rowData.length - 1].value = error.message;
+                error.invalidColumns.forEach(colIndex => {
+                    rowData[colIndex].backgroundColor = '#FF6161';
+                })
+            }
+            return rowData;
+        });
+        data = [...data, ...rows];
+        console.log(data);
+        await writeExcel(data, {
+            fileName: 'file.xlsx'
+        })
     }
 }
