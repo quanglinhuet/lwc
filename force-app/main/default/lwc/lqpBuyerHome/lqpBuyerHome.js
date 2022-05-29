@@ -6,12 +6,11 @@ import fetchDataList from "@salesforce/apex/LpqBuyerHelpers.fetchDataList";
 import countRecordOfList from "@salesforce/apex/LpqBuyerHelpers.countRecordOfList";
 import deleteRecordInList from "@salesforce/apex/LpqBuyerHelpers.deleteRecordInList";
 import editRecordsInList from "@salesforce/apex/LpqBuyerHelpers.editRecordsInList";
-import getISOCountryByCountryCode from "@salesforce/apex/LqpCountryHelpers.getISOCountryByCountryCode";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { loadScript } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
-import getAllCountry from "@salesforce/apex/LqpCountryHelpers.getAllCountry";
-import importFromExcel from "@salesforce/apex/LpqBuyerHelpers.importFromExcel";
+import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
+import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
 
 const TYPE_MESS = {
     Error: "error",
@@ -25,7 +24,6 @@ const getNumberPage = (numberRecord, limitPage) => {
 };
 
 const getToastMessage = (type, mess) => {
-    console.log("aa: ", type, mess);
     const eventMessSuccess = new ShowToastEvent({
         title: type === TYPE_MESS.Success ? "Success" : "Error",
         message: mess,
@@ -42,29 +40,14 @@ const jsonParse = (str, defaultVal = null) => {
     }
 };
 
-const limitPageValue = [
-    {
-        label: "3 Records",
-        value: 3
-    },
-    {
-        label: "5 Records",
-        value: 5
-    },
-    {
-        label: "10 Records",
-        value: 10
-    }
-];
-
 let XLS = {};
+let writeExcel = {};
 
 export default class DataTableComponent extends LightningElement {
     lstIdSeleced = [];
     dataList;
     modeEdit = false;
     draftValues = [];
-    @track optionsLimit = limitPageValue;
     @track numberSelected = 0;
     @track disableDelete = true;
     @track disableBack = true;
@@ -139,14 +122,16 @@ export default class DataTableComponent extends LightningElement {
     @track countrySearchString = "";
 
     // XLSX properties
-    @track importModalIsShow = false;
+    @track importModalIsShow = false
     @track xlsxImportData;
     @track fileXlsxName;
     @track fileXlsxReady = false;
     @track fileXlsxLoading = false;
+    @track fileContent = null;
     @track allCountry = [];
     @track isInImportProcess = false;
     @track isImportSuccess = false;
+    @track excelHeader;
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
@@ -154,14 +139,14 @@ export default class DataTableComponent extends LightningElement {
 
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")])
-            .then(() => {
-                // eslint-disable-next-line no-undef
-                XLS = XLSX;
-            })
-            .catch(() => {
-                console.log("loading SheetJS library failue!");
-            });
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.core.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
+        .then(() => {
+            XLS = XLSX;
+            writeExcel = writeXlsxFile;
+        })
+        .catch(() => {
+            console.log("loading SheetJS library failue!");
+        });
     }
 
     /**
@@ -200,15 +185,6 @@ export default class DataTableComponent extends LightningElement {
         }
     }
 
-    @wire(getAllCountry)
-    wiredAllCountry({ error, data }) {
-        if (data) {
-            this.allCountry = data;
-        } else if (error) {
-            console.log(error);
-        }
-    }
-
     /**
      * Get Navigation Info
      * @param {*} result
@@ -237,12 +213,6 @@ export default class DataTableComponent extends LightningElement {
 
     get labelEdit() {
         return this.modeEdit ? "Cancel Edit" : "Edit";
-    }
-
-    get getLabelLimitPage() {
-        return limitPageValue.find(
-            (e) => e.value.toString() === this.limitPage.toString()
-        ).label;
     }
 
     editTable() {
@@ -443,22 +413,6 @@ export default class DataTableComponent extends LightningElement {
         refreshApex(this.dataList);
     }
 
-    handleChangeLimitPage(event) {
-        this.limitPage = event.detail.value;
-        this.currentPage = 1;
-        this.rowOffset = 0;
-        this.getDataList(event.detail.value);
-        this.getPageInfo();
-    }
-
-    openSetting() {
-        this.modeList = false;
-    }
-
-    closeSetting = () => {
-        this.modeList = true;
-    };
-
     refreshTableList = (event) => {
         if (event.detail.isRefresh) refreshApex(this.dataList);
     };
@@ -467,12 +421,6 @@ export default class DataTableComponent extends LightningElement {
      * Render call back
      */
     renderedCallback() {
-        this.template
-            .querySelector(".input-search-countrys")
-            .setAttribute(
-                "list",
-                this.template.querySelector(".search-countrys-list").id
-            );
         if (this.currentPage === 1) {
             this.disableBack = true;
         } else {
@@ -485,53 +433,22 @@ export default class DataTableComponent extends LightningElement {
         }
     }
 
-    // handleCellChange(e) {
-    //     let drafValues = e.detail.draftValues;
-    //     drafValues.forEach( async value => {
-    //         if (value.CountryCode) {
-    //             let indexRecord = -1;
-    //             await getISOCountryByCountryCode({countryCode: value.CountryCode})
-    //                 .then((result) => {
-    //                     this.dataTable.find((record, index) => {
-    //                         if(record.Id === value.Id) {
-    //                             indexRecord = index;
-    //                             record.ISOCountryCode = result;
-    //                             return true;
-    //                         }
-    //                         return false;
-    //                     });
-    //                     let newDataTable = [...this.dataTable];
-    //                     newDataTable[indexRecord].ISOCountryCode = result;
-    //                     this.dataTable = newDataTable;
-    //                 })
-    //                 .catch((error) => {
-    //                     console.log(error);
-    //                 });
-    //         }
-    //     });
-    // }
-
-    // select box
-    handleSelectCountry(e) {
-        let value = e.target.value;
-        if (value) {
-            getISOCountryByCountryCode({ countryCode: value })
-                .then((result) => {
-                    this.isoCountryCodeDisplayed = result;
-                })
-                .catch(() => {
-                    this.isoCountryCodeDisplayed = "";
-                });
-        }
-    }
-
     // Import xlsx
     openImportModal() {
         this.importModalIsShow = true;
     }
 
-    closeImportModal() {
+    handleCloseImportModal() {
         this.importModalIsShow = false;
+    }
+
+    @wire(getSampleFieldsInfo)
+    wiredFieldsInfo({error, data}) {
+        if (data) {
+            this.fieldsInfo = data;
+        } else if (error) {
+            console.log(error);
+        }
     }
 
     handleUploadExcel(event) {
@@ -551,6 +468,7 @@ export default class DataTableComponent extends LightningElement {
                 { header: 1 }
             );
             if (roa.length && Array.isArray(roa)) {
+                this.excelHeader = [...roa[0]];
                 roa.shift();
                 result = roa;
             }
@@ -562,15 +480,16 @@ export default class DataTableComponent extends LightningElement {
         var reader = new FileReader();
         reader.onload = (event) => {
             let data = event.target.result;
+            this.fileContent = data;
             let workbook = XLS.read(data, {
                 type: "binary"
             });
-            var jsonObj = this.getFirstSheetData(workbook);
+            let jsonObj = this.getFirstSheetData(workbook);
             jsonObj = jsonObj.filter((row) => {
                 return row.length > 0;
             });
             this.xlsxImportData = jsonObj;
-            console.log(jsonObj);
+            // console.log(jsonObj);
         };
         reader.onerror = function (ex) {
             this.error = ex;
@@ -599,11 +518,22 @@ export default class DataTableComponent extends LightningElement {
 
 
     async importExcelHandle() {
+        // Validate FrontEnd
+        this.invalidExcel = false;
+        let validateResult = this.validateExcelInput();
+
+        if (!validateResult.valid) {
+            // export excel
+            // console.log(validateResult.errors);
+            this.invalidExcel = true;
+            this.showExcelValidateError(validateResult.errors);
+            return;
+        } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
         let startTime = performance.now();
-        const BLOCK_SIZE = 1100;
+        const BLOCK_SIZE = 10000;
         const REQUESTS_PER_TIME = 1;
         console.log(`Block size: ${BLOCK_SIZE}`);
         let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
@@ -613,9 +543,10 @@ export default class DataTableComponent extends LightningElement {
         for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
             count++;
             promises.push(
-                importFromExcel({
+                importObjectFromExcel({
                     listData: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
-                    startIndex: i
+                    startIndex: i,
+                    headers: [...this.excelHeader]
                 })
             );
             if (count % REQUESTS_PER_TIME === 0 || count === totalBlock) {
@@ -662,16 +593,6 @@ export default class DataTableComponent extends LightningElement {
             }
         }
         return bytes;
+    
     }
-
-    handleChangeInput = (e) => {
-        console.log(e.target.value);
-        getISOCountryByCountryCode({ countryCode: e.target.value })
-            .then((result) => {
-                this.isoCountryCodeDisplayed = result;
-            })
-            .catch(() => {
-                this.isoCountryCodeDisplayed = "";
-            });
-    };
 }

@@ -9,35 +9,11 @@
         <div class=" action-edit-delete-aria">
           <div class="slds-grid slds-grid--align-start">
             <button class="slds-button slds-button--brand" name="ImportExcel" onclick={openImportModal}>Import Excel</button>
-            <button class="slds-button slds-button--brand" name="Edit" onclick={editTable}>{labelEdit}</button>
-            <button class="slds-button slds-button--brand" name="DeleteRecords" onclick={deleteSelected} disabled={disableDelete}>Delete</button>
           </div>
-          <c-lpq-fillter id = "fillter-id"></c-lpq-fillter>
         </div>
       </template>
     </div>
-    <div style class = "select-box-country">
-      <div class="select-result-text">
-        <span class="slds-form-element__addon" style="margin-left: 20px;">ISOCountryCode</span>
-        <input class="slds-input iso-country-text" type="text" disabled value = {isoCountryCodeDisplayed}/>
-      </div>
-      <div class="select-action-area">
-        <span class="slds-form-element__addon">CountryCode</span>
-        <input class="slds-input input-search-countrys" type="text" onchange={handleChangeInput}/>
-        <datalist class="search-countrys-list" id = "datalist-country">
-          <template for:each={allCountry} for:item="country">
-            <option key = {country} value={country}>{country}</option>
-          </template>
-        </datalist>
-        <!-- <select class = "slds-select" onchange={handleSelectCountry}>
-          <option></option>
-          <template for:each={allCountry} for:item="country" onchange={handleSelectCountry}>
-              <option key = {country} value={country}>{country}</option>
-          </template>
-        </select> -->
-      </div>
-    </div>
-    <br>
+    
     <!-- Header end -->
     <template if:true={modeList}>
       <!-- Table list record start -->
@@ -112,15 +88,16 @@
             <div class="slds-modal__container">
               <header class="slds-modal__header">
                 <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
-                  onclick={closeImportModal}>
+                  onclick={handleCloseImportModal}>
                   <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small">
                   </lightning-icon>
                 </button>
                 <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Import from excel</h2>
               </header>
               <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
-                <div class="file-loading-area" >
-                  <lightning-icon class="status-icon" icon-name="action:approval" alternative-text="Approved" title="Approved" if:true={isImportSuccess}></lightning-icon>
+                <div class="file-loading-area">
+                  <lightning-icon class="status-icon" icon-name="action:approval" alternative-text="Approved"
+                    title="Approved" if:true={isImportSuccess}></lightning-icon>
                   <div class="slds-form-element xlsx-selector">
                     <div class="exampleHolder" if:true={fileXlsxLoading}>
                       <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
@@ -128,26 +105,36 @@
                     <div class="slds-form-element__control">
                       <div class="slds-file-selector slds-file-selector_files">
                         <div class="slds-file-selector__dropzone">
-                          <input type="file" class="slds-file-selector__input slds-assistive-text" accept=".xlsx" onchange={handleUploadExcel}
-                            id="file-upload-input-107" aria-labelledby="file-selector-primary-label-105 file-selector-secondary-label106" />
-                          <label class="slds-file-selector__body" for="file-upload-input-107" id="file-selector-secondary-label106">
+                          <input type="file" class="slds-file-selector__input slds-assistive-text" accept=".xlsx"
+                            onchange={handleUploadExcel} id="file-upload-input-107"
+                            aria-labelledby="file-selector-primary-label-105 file-selector-secondary-label106" />
+                          <label class="slds-file-selector__body" for="file-upload-input-107"
+                            id="file-selector-secondary-label106">
                             <span class="slds-file-selector__button slds-button slds-button_neutral">
                               <svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
                                 <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#upload"></use>
                               </svg>Upload Files</span>
-                            <span class="slds-file-selector__text slds-medium-show" if:true={fileXlsxReady}>{fileXlsxName}</span>
-                            <span class="slds-file-selector__text slds-medium-show" if:false={fileXlsxReady}>or Drop Files</span>
+                            <span class="slds-file-selector__text slds-medium-show"
+                              if:true={fileXlsxReady}>{fileXlsxName}</span>
+                            <span class="slds-file-selector__text slds-medium-show" if:false={fileXlsxReady}>or Drop
+                              Files</span>
                           </label>
                         </div>
                       </div>
                     </div>
                   </div>
+                  <div if:true={invalidExcel}>
+                    <P> File input is invalid, please check file excel downloaded! </P>
+                  </div>
                 </div>
               </div>
               <footer class="slds-modal__footer">
-                <lightning-button variant="brand" label="Start Import" onclick ={importExcelHandle} if:true={importEnable}></lightning-button>
-                <lightning-button variant="brand" label="Start Import" if:false={importEnable} disabled></lightning-button>
-                <lightning-button class = "import-modal-close" variant="brand" label="Close" title="Close" onclick={closeImportModal}></lightning-button>
+                <lightning-button variant="brand" label="Start Import" onclick={importExcelHandle} if:true={importEnable}>
+                </lightning-button>
+                <lightning-button variant="brand" label="Start Import" if:false={importEnable} disabled>
+                </lightning-button>
+                <lightning-button class="import-modal-close" variant="brand" label="Close" title="Close"
+                  onclick={handleCloseImportModal}></lightning-button>
               </footer>
             </div>
           </section>
