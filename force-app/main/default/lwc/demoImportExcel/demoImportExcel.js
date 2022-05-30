@@ -3,8 +3,8 @@ import { LightningElement, track, wire } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { loadScript } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
-import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
-import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
+import importObjectFromExcel from "@salesforce/apex/LpqImportExcelDemo.importObjectFromExcel";
+import getSampleFieldsInfo from "@salesforce/apex/LpqImportExcelDemo.getSampleFieldsInfo";
 
 let XLS = {};
 let writeExcel = {};
@@ -42,7 +42,7 @@ export default class DemoImportExcel extends LightningElement {
 
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.core.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
             .then(() => {
                 // eslint-disable-next-line no-undef
                 XLS = XLSX;
@@ -148,15 +148,16 @@ export default class DemoImportExcel extends LightningElement {
     async importExcelHandle() {
         // Validate FrontEnd
         this.invalidExcel = false;
-        let validateResult = this.validateExcelInput();
-
-        if (!validateResult.valid) {
-            // export excel
-            // console.log(validateResult.errors);
-            this.invalidExcel = true;
-            this.showExcelValidateError(validateResult.errors);
-            return;
-        } 
+        // let startTimeValidate = performance.now();
+        // let validateResult = this.validateExcelInput();
+        // if (!validateResult.valid) {
+        //     // export excel
+        //     // console.log(validateResult.errors);
+        //     this.invalidExcel = true;
+        //     this.showExcelValidateError(validateResult.errors);
+        //     console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
+        //     return;
+        // } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );

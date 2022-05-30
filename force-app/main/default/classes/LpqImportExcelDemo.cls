@@ -1,20 +1,13 @@
-public with sharing class ImportExcelDemo {
-
+public with sharing class LpqImportExcelDemo {
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
-        LpqImportResult result = validateListUser(listData, headers);
-        if (!result.isInputValid) {
-            result.success = false;
-            return JSON.deserializeUntyped(JSON.serialize(result));
-        }
-        result.success = true;
-        result.indexsErrorRecord = new List<Integer>();
+        LpqImportExcelResult result = new LpqImportExcelResult();
         Integer heapNew = Limits.getHeapSize();
         // Validate backend here
 
         List<sample2__c> listBuyerImport = convertListDataImportToListSampleObject(listData);
         // Tinh Toan luu record bi loi vao customobject, neu tinh toan loi => 
-
+        Savepoint sp = Database.setSavePoint();
         Integer heapNew1 = Limits.getHeapSize();
         if (sample2__c.SObjectType.getDescribe().isCreateable()) {
             Database.SaveResult[] sr = Database.insert(listBuyerImport, false);
@@ -22,8 +15,12 @@ public with sharing class ImportExcelDemo {
                 if (!sr.get(i).success) {
                     result.success = false;
                     result.indexsErrorRecord.add(i + startIndex);
+                    result.saveResults.put(i + startIndex, sr.get(i));
                 }
             }
+        }
+        if (!result.success) {
+            Database.rollback(sp);
         }
         Integer heapNew2 = Limits.getHeapSize();
         return JSON.deserializeUntyped(JSON.serialize(result));
@@ -116,8 +113,8 @@ public with sharing class ImportExcelDemo {
      * Function validate list rows of object
      */
     @AuraEnabled
-    public static LpqImportResult validateListUser(List<List<String>> rows, List<String> listHeader) {
-        LpqImportResult validateResult = new LpqImportResult();
+    public static LpqImportExcelResult validateListUser(List<List<String>> rows, List<String> listHeader) {
+        LpqImportExcelResult validateResult = new LpqImportExcelResult();
         List<FieldValidateConditionEntity> listFieldInfo = getListFieldInfoByListHeader(listHeader);
         for (Integer i = 0; i < rows.size(); i++) {
             List<String> row = rows.get(i);
@@ -132,6 +129,7 @@ public with sharing class ImportExcelDemo {
                 if (errorMessage != '') {
                     listColumnInvalid.add(j);
                     mapErrorMessage.put(listHeader.get(j), errorMessage);
+                    rowValid = false;
                 }
             }
 
