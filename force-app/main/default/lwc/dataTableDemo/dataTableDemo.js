@@ -5,9 +5,12 @@ import { refreshApex } from "@salesforce/apex";
 import fetchDataList from "@salesforce/apex/ImportExcelDemo.fetchDataList";
 import countRecordOfList from "@salesforce/apex/ImportExcelDemo.countRecordOfList";
 import deleteRecordInList from "@salesforce/apex/LpqBuyerHelpers.deleteRecordInList";
+import editRecordsInList from "@salesforce/apex/LpqBuyerHelpers.editRecordsInList";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
-import { loadStyle } from 'lightning/platformResourceLoader';
+import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
+import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
+import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
 
 const TYPE_MESS = {
     Error: "error",
@@ -40,7 +43,8 @@ const jsonParse = (str, defaultVal = null) => {
 let XLS = {};
 let writeExcel = {};
 
-export default class DataTableComponent extends LightningElement {
+export default class DataTableDemo extends LightningElement {
+    @api lstdata;
     lstIdSeleced = [];
     dataList;
     modeEdit = false;
@@ -112,7 +116,6 @@ export default class DataTableComponent extends LightningElement {
     @track error;
     @track currentPage = 1;
     @track limitPage = 10;
-    @track dataTable;
     @track modeList = true;
     @track allFiled;
     @track getDataForTableSetting;
@@ -126,6 +129,18 @@ export default class DataTableComponent extends LightningElement {
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
+    }
+
+    connectedCallback() {
+        // Loading sheetjs library
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
+        .then(() => {
+            XLS = XLSX;
+            writeExcel = writeXlsxFile;
+        })
+        .catch(() => {
+            console.log("loading SheetJS library failue!");
+        });
     }
 
     /**
@@ -155,12 +170,86 @@ export default class DataTableComponent extends LightningElement {
                 }
                 return viewRecord;
             });
-            this.dataTable = newDataTable;
+            this.lstdata = newDataTable;
         } else if (result.error) {
-            this.dataTable = [];
+            this.lstdata = [];
             this.error = result.error;
         }
     }
+
+    /**
+     * Get Navigation Info
+     * @param {*} result
+     */
+    @wire(countRecordOfList)
+    wiredRecordOfList(result) {
+        if (result.data) {
+            this.error = undefined;
+            const totalPage = getNumberPage(result.data, this.limitPage);
+            this.totalPageInList = totalPage;
+            if (this.currentPage === 1) {
+                this.disableBack = true;
+            } else {
+                this.disableBack = false;
+            }
+            if (this.currentPage === this.totalPageInList) {
+                this.disableNext = true;
+            } else {
+                this.disableNext = false;
+            }
+        } else if (result.error) {
+            this.counts = 0;
+            this.error = result.error;
+        }
+    }
+
+    get labelEdit() {
+        return this.modeEdit ? "Cancel Edit" : "Edit";
+    }
+
+    editTable() {
+        this.modeEdit = !this.modeEdit;
+        const tmpColumns = jsonParse(JSON.stringify(this.columns));
+        tmpColumns.forEach((element) => {
+            if (element.fieldName !== "ISOCountryCode") {
+                element.editable = this.modeEdit;
+            }
+        });
+        this.columns = tmpColumns;
+    }
+
+    /**
+     * Get data of list
+     */
+    getDataList = (limit) => {
+        fetchDataList({ offsetNum: this.currentPage, limitNum: limit })
+            .then((result) => {
+                this.error = undefined;
+                let newDataTable = result.map((record) => {
+                    let viewRecord = { Id: record.Id };
+                    if (record.Field895__c) {
+                        viewRecord.Field895__c = record.Field895__c;
+                    }
+                    if (record.Field757__c) {
+                        viewRecord.Field757__c = record.Field757__c;
+                    }
+                    if (record.Field856__c) {
+                        viewRecord.Field856__c = record.Field856__c;
+                    }
+                    if (record.Field348__c) {
+                        viewRecord.Field348__c =
+                            record.Field348__c;
+                        viewRecord.errorCalcultion = '';
+                    }
+                    return viewRecord;
+                });
+
+                this.lstdata = newDataTable;
+            })
+            .catch((e) => {
+                this.error = e;
+            });
+    };
 
     getPageInfo = () => {
         countRecordOfList()
@@ -204,6 +293,65 @@ export default class DataTableComponent extends LightningElement {
     };
 
     /**
+     * Handle table action
+     * @param {*} event
+     */
+    handleRowAction(event) {
+        const action = event.detail.action;
+        const row = event.detail.row;
+        this.record = row;
+        switch (action.name) {
+            case "preview_detail":
+                this.bShowModal = true;
+                break;
+            case "delete_record":
+                this.deleteRecord(row.Id);
+                break;
+            default:
+                console.log("a", row);
+                break;
+        }
+    }
+
+    disableNavigation() {
+        const totalPage = this.totalPageInList;
+        let test = this.template.querySelectorAll("lightning-button");
+        for (let i = 0; i < test.length; i++) {
+            if (test[i].name === "previous") {
+                if (this.currentPage === 1) test[i].disabled = true;
+            } else if (test[i].name === "next") {
+                if (this.currentPage === totalPage) test[i].disabled = true;
+            }
+        }
+    }
+
+    /**
+     * Handle back or next
+     * @param {*} event
+     */
+    handleNavigation(event) {
+        const action = event.target;
+        switch (action.name) {
+            case "previous":
+                if (this.currentPage > 1) {
+                    this.currentPage -= 1;
+                    this.getDataList(this.limitPage);
+                }
+                break;
+            case "next":
+                if (this.currentPage < this.totalPageInList) {
+                    this.currentPage += 1;
+                    this.getDataList(this.limitPage);
+                }
+                break;
+            default:
+                console.log("a", action);
+                break;
+        }
+        this.rowOffset = (this.currentPage - 1) * this.limitPage;
+    }
+
+    /**
      * Close modal preview
      */
     closeModal() {
@@ -226,6 +374,33 @@ export default class DataTableComponent extends LightningElement {
                     this.dispatchEvent(getToastMessage(TYPE_MESS.Error, error));
                 });
         }
+    }
+
+    handleRowSelect(event) {
+        const listSelected = event.detail.selectedRows;
+        this.numberSelected = listSelected.length;
+        if (listSelected.length > 0) {
+            this.disableDelete = false;
+            const lstRecordSeleced = [];
+            for (let i = 0; i < listSelected.length; i++) {
+                lstRecordSeleced.push(listSelected[i].Id);
+            }
+            this.lstIdSeleced = lstRecordSeleced;
+        } else {
+            this.disableDelete = true;
+            this.lstIdSeleced = [];
+        }
+    }
+
+    async handleSave(event) {
+        const updatedFields = event.detail.draftValues;
+        const result = await editRecordsInList({ data: updatedFields });
+        console.log(JSON.stringify("Apex update result: " + result));
+        this.dispatchEvent(
+            getToastMessage(TYPE_MESS.Success, `Records updared`)
+        );
+        this.editTable();
+        refreshApex(this.dataList);
     }
 
     refreshTableList = (event) => {
@@ -252,16 +427,5 @@ export default class DataTableComponent extends LightningElement {
         } else {
             this.disableNext = false;
         }
-    }
-
-    // Import xlsx
-    openImportModal() {
-        this.importModalIsShow = true;
-    }
-
-    handleReloadTable(event) {
-        this.importModalIsShow = event.detail.importModalIsShow;
-        let newData = event.detail.listData;
-        this.dataTable = [...this.dataTable, ...newData];
     }
 }
