@@ -7,7 +7,7 @@ public with sharing class ValidateBackendDemo {
         Integer abcd;
         Boolean isColumnError = false;
         Boolean isRowError = false;
-        String messageError = '';
+        Map<String,String> messageError = new Map<String,String>();
         FieldValidateConditionEntity field = new FieldValidateConditionEntity();
         String dataColumn = '';
         LpqImportResult result = new LpqImportResult();
@@ -27,7 +27,6 @@ public with sharing class ValidateBackendDemo {
         for(List<String> rowData: listData ){
             listColumnError = new List<Integer>();
             row = listData.indexOf(rowData);
-            messageError +=row + ': {';
             for(Integer i = 0; i< rowData.size(); i++){
                 Integer column = i;
                 field = listFieldInfor.get(i);
@@ -36,10 +35,10 @@ public with sharing class ValidateBackendDemo {
                     // if (field.type)
                     if (field.isRequired && String.isEmpty(dataColumn)) {
                         isColumnError = true;
-                        messageError += '"'+field.fieldLabel + '": "Required error!", ';
+                        messageError.put(field.fieldLabel, 'Required error!');
                     } else if (dataColumn.length() > field.length) {
                         isColumnError = true;
-                        messageError += '"'+field.fieldLabel + '": "Max length error!", ';
+                        messageError.put(field.fieldLabel, 'Max length error!');
                     } 
                     // TODO: validate data type
                     // Add to list column error if data in this column is error
@@ -50,16 +49,15 @@ public with sharing class ValidateBackendDemo {
                     isColumnError = false;
                 }
             }
-            messageError += '}';
             // If data in this row has error, add to list and map for result
             if (isRowError) {
-                result.validateErrorMessages.put(row,messageError);
+                result.validateErrorMessages.put(row,JSON.serialize(messageError));
                 result.validateErrorCollumns.put(row,listColumnError);
                 result.indexsErrorRecord.add(row);
                 result.isInputValid = false;
             }
             isRowError = false;
-            messageError = '';
+            messageError.clear();
         }
         return result;
     }
