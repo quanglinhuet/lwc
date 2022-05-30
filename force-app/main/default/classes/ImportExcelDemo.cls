@@ -1,21 +1,33 @@
 public with sharing class ImportExcelDemo {
 
     @AuraEnabled(cacheable = true)
-    public static List<M_Buyer__c> fetchDataList(Integer offsetNum, Integer limitNum){
-        return [
+    public static Object fetchDataList(Integer offsetNum, Integer limitNum) {
+        Sample2ViewDataObject viewObject = new Sample2ViewDataObject();
+        viewObject.lstData = [
                 SELECT 
                     Id , 
-                    Name,
-                    BuyerAddress__c,
-                    CountryCode__r.Name,
-                    ISOCountryCode_Alphabet3__r.Name,
-                    PointTest__c
-                FROM M_Buyer__c
+                    Field895__c,
+                    Field757__c,
+                    Field856__c,
+                    Field348__c
+                FROM sample2__c
                 WITH SECURITY_ENFORCED
                 LIMIT :limitNum
                 OFFSET :((offsetNum - 1) * limitNum)
             ];
+        viewObject.lstFieldError = new List<List<String>>();
+
+        for (sample2__c sampleObj : viewObject.lstData) {
+            List<String> lstFieldErrorInCurrentRecord = new List<String>();
+            if (Double.valueOf(sampleObj.Field348__c) < 60) {
+                lstFieldErrorInCurrentRecord.add('Field348__c');
+            }
+            viewObject.lstFieldError.add(lstFieldErrorInCurrentRecord);
+        }
+        return JSON.deserializeUntyped(JSON.serialize(viewObject));
     }
+
+
 
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){

@@ -66,32 +66,33 @@ export default class DataTableDemo extends LightningElement {
      */
     @wire(fetchDataList, { offsetNum: 1, limitNum: 10 })
     wiredDataList(result) {
-        this.dataList = result;
-        if (result.data) {
-            this.error = undefined;
-            let newDataTable = result.data.map((record) => {
-                let viewRecord = { Id: record.Id };
-                if (record.Field895__c) {
-                    viewRecord.Field895__c = record.Field895__c;
-                }
-                if (record.Field757__c) {
-                    viewRecord.Field757__c = record.Field757__c;
-                }
-                if (record.Field856__c) {
-                    viewRecord.Field856__c = record.Field856__c;
-                }
-                if (record.Field348__c) {
-                    viewRecord.Field348__c =
-                        record.Field348__c;
-                    viewRecord.errorCalcultion = '';
-                }
-                return viewRecord;
-            });
-            this.lstdata = newDataTable;
-        } else if (result.error) {
-            this.lstdata = [];
-            this.error = result.error;
-        }
+        // this.dataList = result;
+        // if (result.data) {
+        //     this.error = undefined;
+        //     let newDataTable = result.data.map((record) => {
+        //         let viewRecord = { Id: record.Id };
+        //         if (record.Field895__c) {
+        //             viewRecord.Field895__c = record.Field895__c;
+        //         }
+        //         if (record.Field757__c) {
+        //             viewRecord.Field757__c = record.Field757__c;
+        //         }
+        //         if (record.Field856__c) {
+        //             viewRecord.Field856__c = record.Field856__c;
+        //         }
+        //         if (record.Field348__c) {
+        //             viewRecord.Field348__c =
+        //                 record.Field348__c;
+        //             viewRecord.errorCalcultion = '';
+        //         }
+        //         return viewRecord;
+        //     });
+        //     this.lstdata = newDataTable;
+            console.log(result);
+        // } else if (result.error) {
+        //     this.lstdata = [];
+        //     this.error = result.error;
+        // }
     }
 
     /**
