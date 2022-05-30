@@ -1,4 +1,22 @@
 public with sharing class ImportExcelDemo {
+
+    @AuraEnabled(cacheable = true)
+    public static List<M_Buyer__c> fetchDataList(Integer offsetNum, Integer limitNum){
+        return [
+                SELECT 
+                    Id , 
+                    Name,
+                    BuyerAddress__c,
+                    CountryCode__r.Name,
+                    ISOCountryCode_Alphabet3__r.Name,
+                    PointTest__c
+                FROM M_Buyer__c
+                WITH SECURITY_ENFORCED
+                LIMIT :limitNum
+                OFFSET :((offsetNum - 1) * limitNum)
+            ];
+    }
+
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
         ImportExcelResult result = new ImportExcelResult();
