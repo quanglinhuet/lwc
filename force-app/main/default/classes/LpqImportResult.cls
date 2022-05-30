@@ -1,14 +1,10 @@
-public with sharing class LpqImportResult {
+public with sharing class LpqImportExcelResult {
     public Boolean success;
     public List<Integer> indexsErrorRecord;
-    public Boolean isInputValid;
-    public Map<Integer, String> validateErrorMessages;
-    public Map<Integer, List<Integer>> validateErrorCollumns;
-    public LpqImportResult() {
+    public Map<Integer, Database.SaveResult> saveResults;
+    public LpqImportExcelResult() {
         this.success = true;
         this.indexsErrorRecord = new List<Integer>();
-        this.isInputValid = true;
-        this.validateErrorMessages = new Map<Integer, String>();
-        this.validateErrorCollumns = new Map<Integer,List<Integer>>();
+        this.saveResults = new Map<Integer, Database.SaveResult>();
     }
 }

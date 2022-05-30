@@ -3,8 +3,8 @@ import { LightningElement, track, wire } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { loadScript } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
-import importObjectFromExcel from "@salesforce/apex/LpqImportExcelDemo.importObjectFromExcel";
-import getSampleFieldsInfo from "@salesforce/apex/LpqImportExcelDemo.getSampleFieldsInfo";
+import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
+import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
 
 let XLS = {};
 let writeExcel = {};
@@ -79,6 +79,10 @@ export default class DemoImportExcel extends LightningElement {
         this.importModalIsShow = false;
     }
 
+    /**
+     * Handle when click attack file excel
+     * @param {*} event 
+     */
     handleUploadExcel(event) {
         this.isImportSuccess = false;
         const uploadedFiles = event.target.files;
@@ -88,6 +92,11 @@ export default class DemoImportExcel extends LightningElement {
         }
     }
 
+    /**
+     * function get content of first sheet in excel workbook, exclude header
+     * @param {*} workbook 
+     * @returns {Object} JSON Object
+     */
     getFirstSheetData(workbook) {
         var result = {};
         if (workbook.SheetNames.length > 0) {
@@ -104,6 +113,10 @@ export default class DemoImportExcel extends LightningElement {
         return result;
     }
 
+    /**
+     * Function read file excel and write content to local variable
+     * @param {File} file file excel to read
+     */
     excelToJSON(file) {
         var reader = new FileReader();
         reader.onload = (event) => {
@@ -144,57 +157,61 @@ export default class DemoImportExcel extends LightningElement {
     }
 
 
-
+    /**
+     * Handle when click button import excel
+     */
     async importExcelHandle() {
         // Validate FrontEnd
         this.invalidExcel = false;
-        // let startTimeValidate = performance.now();
-        // let validateResult = this.validateExcelInput();
-        // if (!validateResult.valid) {
-        //     // export excel
-        //     // console.log(validateResult.errors);
-        //     this.invalidExcel = true;
-        //     this.showExcelValidateError(validateResult.errors);
-        //     console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
-        //     return;
-        // } 
+        let startTimeValidate = performance.now();
+        let validateResult = this.validateExcelInput();
+        // Handle when validate frontend error
+        if (!validateResult.valid) {
+            // export excel
+            // console.log(validateResult.errors);
+            this.invalidExcel = true;
+            this.showExcelValidateError(validateResult.errors);
+            console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
+            return;
+        } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
         let startTime = performance.now();
         const BLOCK_SIZE = 10000;
-        const REQUESTS_PER_TIME = 1;
         console.log(`Block size: ${BLOCK_SIZE}`);
-        let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
-        let promises = [];
-        let count = 0;
-        for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
-            count++;
-            promises.push(
-                importObjectFromExcel({
-                    listData: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
-                    startIndex: i,
-                    headers: [...this.excelHeader]
-                })
-            );
-            if (count % REQUESTS_PER_TIME === 0 || count === totalBlock) {
-                // eslint-disable-next-line no-await-in-loop
-                await Promise.allSettled(promises);
-            }
-        }
-        await Promise.all(promises)
-            .then((values) => {
-                console.log(values);
-                this.isImportSuccess = true;
-                this.fileXlsxLoading = false;
+
+        importObjectFromExcel({
+            listData: this.xlsxImportData,
+            startIndex: 0,
+            headers: [...this.excelHeader]
+        })
+            .then((data) => {
+                if (data.success) {
+                    console.log(data);
+                    this.isImportSuccess = true;
+                    this.fileXlsxLoading = false;
+                } else {
+                    // Gen file excel
+                    this.isImportSuccess = false;
+                    this.invalidExcel = true;
+                    this.fileXlsxLoading = false;
+                    this.showExcelValidateError(this.getListErrorsValidate(data));
+                }
+                console.log (`Total time: ${performance.now() - startTime}`); 
             })
             .catch((error) => {
                 console.log(error);
             });
-        console.log (`Total time: ${performance.now() - startTime}`);   
+          
     }
 
+    /**
+     * Function caculate size of object
+     * @param {*} object object to caculate size
+     * @returns {Number} size of object in bytes 
+     */
     roughSizeOfObject(object) {
         var objectList = [];
         var stack = [object];
@@ -225,6 +242,10 @@ export default class DemoImportExcel extends LightningElement {
     
     }
 
+    /**
+     * Function validate file excel loaded
+     * @returns {Object} validate result Object
+     */
     validateExcelInput() {
         const types = [];
         let valid = true;
@@ -249,6 +270,12 @@ export default class DemoImportExcel extends LightningElement {
         }
     }
 
+    /**
+     * Validate special row of file excel
+     * @param {*} row 
+     * @param {*} types 
+     * @returns {Object} validate result Object
+     */
     validateRow(row, types) {
         let rowValid = true;
         let message = {};
@@ -273,6 +300,12 @@ export default class DemoImportExcel extends LightningElement {
         };
     }
 
+    /**
+     * Function validate special cell of row
+     * @param {*} value Value of cell
+     * @param {*} type Type of cell 
+     * @returns {String} error message, if valid return ''.
+     */
     validateCell(value, type) {
         if (type) {
             if (!value && type.isRequired) {
@@ -292,6 +325,10 @@ export default class DemoImportExcel extends LightningElement {
         return null;
     }
 
+    /**
+     * Function create excel file with infomation of errors.
+     * @param {*} errors error object
+     */
     async showExcelValidateError (errors) {
         const wb = XLS.read(this.fileContent, {
             type: "binary"
@@ -311,6 +348,7 @@ export default class DemoImportExcel extends LightningElement {
         header.push({value: 'エラー内容'});
         data.push(header);
         sheetJson.splice(0, 1);
+        // Create excel content with current excel data append response errors
         let rows = sheetJson.map((row, index) => {
             let rowDataTemp = [...row];
             let rowData = []
@@ -331,9 +369,60 @@ export default class DemoImportExcel extends LightningElement {
             return rowData;
         });
         data = [...data, ...rows];
-        // console.log(data);
         await writeExcel(data, {
             fileName: 'file.xlsx'
         })
+    }
+
+    /**
+     * Create errors object from apex response. For creating file excel with error infomation.
+     * @param {*} data 
+     * @returns 
+     */
+    getListErrorsValidate(data) {
+        let mapOfFieldInfo = this.getMapOfFieldByHeader([...this.fieldsInfo], [...this.excelHeader]);
+        let mapErrors = new Map();
+        for(const [key, value] of Object.entries(data.saveResults)) {
+            let message = "";
+            let invalidColumns = [];
+            value.errors.forEach(error => {
+                error.fields.forEach(field =>{
+                    let fieldName = field.toLowerCase();
+                    let col = mapOfFieldInfo.has(fieldName) && mapOfFieldInfo.get(fieldName) ? mapOfFieldInfo.get(fieldName) : undefined;
+                    if (col) {
+                        invalidColumns.push(col);
+                    }
+                });
+                message += error.message + ',';
+            });
+            mapErrors.set(parseInt(key, 10), {
+                invalidColumns: invalidColumns,
+                message: message
+            })
+        }
+        return mapErrors;
+    }
+
+    /**
+     * Mapping excel header to Apex SObject field.
+     * @param {*} fieldsInfo 
+     * @param {*} headers 
+     * @returns {Map} map of FieldName to index in header. Ex: "field_101" => 2
+     */
+    getMapOfFieldByHeader(fieldsInfo, headers) {
+        let map = new Map();
+        fieldsInfo.forEach((info) => {
+            let key = info.fieldName;
+            let value;
+            headers.some((header, indexHeader) => {
+                if (info.fieldLabel === header) {
+                    value = indexHeader;
+                    return true;
+                }
+                return false;
+            });
+            map.set(key, value);
+        });
+        return map;
     }
 }

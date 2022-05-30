@@ -1,20 +1,13 @@
 public with sharing class ImportExcelDemo {
-
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
-        LpqImportResult result = validateListUser(listData, headers);
-        if (!result.isInputValid) {
-            result.success = false;
-            return JSON.deserializeUntyped(JSON.serialize(result));
-        }
-        result.success = true;
-        result.indexsErrorRecord = new List<Integer>();
+        ImportExcelResult result = new ImportExcelResult();
         Integer heapNew = Limits.getHeapSize();
         // Validate backend here
 
         List<sample2__c> listBuyerImport = convertListDataImportToListSampleObject(listData);
         // Tinh Toan luu record bi loi vao customobject, neu tinh toan loi => 
-
+        Savepoint sp = Database.setSavePoint();
         Integer heapNew1 = Limits.getHeapSize();
         if (sample2__c.SObjectType.getDescribe().isCreateable()) {
             Database.SaveResult[] sr = Database.insert(listBuyerImport, false);
@@ -22,8 +15,12 @@ public with sharing class ImportExcelDemo {
                 if (!sr.get(i).success) {
                     result.success = false;
                     result.indexsErrorRecord.add(i + startIndex);
+                    result.saveResults.put(i + startIndex, sr.get(i));
                 }
             }
+        }
+        if (!result.success) {
+            Database.rollback(sp);
         }
         Integer heapNew2 = Limits.getHeapSize();
         return JSON.deserializeUntyped(JSON.serialize(result));
@@ -108,112 +105,5 @@ public with sharing class ImportExcelDemo {
             }
         }
         return Json.deserializeUntyped(JSON.serialize(listFieldInfo));
-    }
-
-
-
-    /**
-     * Function validate list rows of object
-     */
-    @AuraEnabled
-    public static LpqImportResult validateListUser(List<List<String>> rows, List<String> listHeader) {
-        LpqImportResult validateResult = new LpqImportResult();
-        List<FieldValidateConditionEntity> listFieldInfo = getListFieldInfoByListHeader(listHeader);
-        for (Integer i = 0; i < rows.size(); i++) {
-            List<String> row = rows.get(i);
-            // validate row
-            Boolean rowValid = true;
-            List<Integer> listColumnInvalid = new List<Integer>();
-            Map<String,String> mapErrorMessage = new Map<String,String>();
-            for (Integer j = 0; j< row.size(); j++) {
-                String value = row.get(j);
-                
-                String errorMessage = validateCol(value, listFieldInfo.get(j));
-                if (errorMessage != '') {
-                    listColumnInvalid.add(j);
-                    mapErrorMessage.put(listHeader.get(j), errorMessage);
-                }
-            }
-
-            if (!rowValid) {
-                validateResult.isInputValid = false;
-                validateResult.validateErrorMessages.put(i, JSON.serialize(mapErrorMessage));
-                validateResult.validateErrorCollumns.put(i, listColumnInvalid);
-            }
-        }
-
-        return validateResult;
-    }
-    
-    /**
-     * Validate row data
-     */
-    private static String validateCol(String value, FieldValidateConditionEntity fieldInfo) {
-        // 0:isValid,  1: message
-        String errorMessage = '';
-
-        // Check if field not exist
-        if (fieldInfo == null) {
-            return errorMessage;
-        }
-
-        // check require
-        if (fieldInfo.isRequired && (value == null || value == '')) {
-            errorMessage = 'Must not empty';
-        } else if(fieldInfo.type == 'NUMBER') {
-            try {
-                Double.valueOf(value);
-            } catch (Exception e) {
-                errorMessage = 'Type invalid';
-            }
-        } else if(value != null && value.length() > fieldInfo.length) {
-            errorMessage = 'Length error';
-        }
-        return errorMessage;
-    }
-
-    /**
-     * get list field info mapping with list header
-     */
-    private static List<FieldValidateConditionEntity> getListFieldInfoByListHeader (List<String> listHeader) {
-        List<FieldValidateConditionEntity> listFieldInfo = getSampleFieldsInfoApex();
-        // Get field info from apex and sort to match list header
-        List<FieldValidateConditionEntity> listFieldInfoOrdered = new List<FieldValidateConditionEntity>(listHeader.size());
-        for (Integer i = 0; i < listHeader.size(); i++) {
-            Boolean typeExist = false;
-            for (FieldValidateConditionEntity fieldInfo : listFieldInfo) {
-                if (fieldInfo.fieldLabel == listHeader.get(i)) {
-                    listFieldInfoOrdered.set(i, fieldInfo);
-                    typeExist = true;
-                    break;
-                }
-            }
-            if (!typeExist) {
-                listFieldInfoOrdered.set(i, null);
-            }
-        }
-        return listFieldInfoOrdered;
-    }
-
-    /**
-     * function get Object Field info in apex
-     */
-    private static List<FieldValidateConditionEntity> getSampleFieldsInfoApex() {
-        SObjectType sample2Type = Schema.getGlobalDescribe().get('sample2__c');
-        Map<String,Schema.SObjectField> mfields = sample2Type.getDescribe().fields.getMap();
-        List<FieldValidateConditionEntity> listFieldInfo = new List<FieldValidateConditionEntity>();
-        for(String key : mfields.keySet()) {
-            Schema.DescribeFieldResult fieldDescribe = mfields.get(key).getDescribe();
-            if (fieldDescribe.isCustom()) {
-                FieldValidateConditionEntity validateEntity = new FieldValidateConditionEntity();
-                validateEntity.fieldName = key;
-                validateEntity.fieldLabel = fieldDescribe.getLabel();
-                validateEntity.length = fieldDescribe.getLength();
-                validateEntity.type = fieldDescribe.getType().name();
-                validateEntity.isRequired = !fieldDescribe.isNillable();
-                listFieldInfo.add(validateEntity);
-            }
-        }
-        return listFieldInfo;
     }
 }
