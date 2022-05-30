@@ -2,8 +2,8 @@ import { LightningElement, wire, track, api } from "lwc";
 import { deleteRecord } from "lightning/uiRecordApi";
 import { refreshApex } from "@salesforce/apex";
 
-import fetchDataList from "@salesforce/apex/LpqBuyerHelpers.fetchDataList";
-import countRecordOfList from "@salesforce/apex/LpqBuyerHelpers.countRecordOfList";
+import fetchDataList from "@salesforce/apex/ImportExcelDemo.fetchDataList";
+import countRecordOfList from "@salesforce/apex/ImportExcelDemo.countRecordOfList";
 import deleteRecordInList from "@salesforce/apex/LpqBuyerHelpers.deleteRecordInList";
 import editRecordsInList from "@salesforce/apex/LpqBuyerHelpers.editRecordsInList";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
@@ -139,7 +139,7 @@ export default class DataTableComponent extends LightningElement {
 
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.core.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
+        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
         .then(() => {
             XLS = XLSX;
             writeExcel = writeXlsxFile;
@@ -518,17 +518,6 @@ export default class DataTableComponent extends LightningElement {
 
 
     async importExcelHandle() {
-        // Validate FrontEnd
-        this.invalidExcel = false;
-        let validateResult = this.validateExcelInput();
-
-        if (!validateResult.valid) {
-            // export excel
-            // console.log(validateResult.errors);
-            this.invalidExcel = true;
-            this.showExcelValidateError(validateResult.errors);
-            return;
-        } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
@@ -554,6 +543,7 @@ export default class DataTableComponent extends LightningElement {
                 await Promise.allSettled(promises);
             }
         }
+        console.log("promises", promises);
         await Promise.all(promises)
             .then((values) => {
                 console.log(values);

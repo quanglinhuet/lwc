@@ -21,7 +21,8 @@ public with sharing class ImportExcelDemo {
             }
         }
         Integer heapNew2 = Limits.getHeapSize();
-        return JSON.deserializeUntyped(JSON.serialize(result));
+        List<Map<String, Object>> listResult = buildJsonObject(listData);
+        return listResult;
     }
     /**
      * convert list data import to list SObject
@@ -120,5 +121,55 @@ public with sharing class ImportExcelDemo {
             }
         }
         return listFieldInfo;
+    }
+
+    public static List<Map<String, Object>> buildJsonObject(List<List<String>> listData) {
+        List<Map<String, Object>> listResult = new List<Map<String, Object>>();
+        Map<String, Object> dataObj = new Map<String, Object>();
+        List<String> listFieldExcel = getListColumnExcel();
+        for (List<String> data : listData) {
+            Map<String,Object> value = new Map<String,Object>();
+            for (Integer i = 0; i < data.size(); i++) {
+                if (data.get(i) != null) {
+                    value.put('value', data.get(i));
+                } else {
+                    value.put('value', '');
+                }
+                if (listFieldExcel[i] === 'Field348__c') {
+                    if (data.get(i) < 60) {
+                        value.put('error', true);
+                    }
+                }
+                dataObj.put(listFieldExcel[i], value);
+            }
+            listResult.add(dataObj);
+        }
+        return listResult;
+    }
+
+    @AuraEnabled(cacheable = true)
+    public static List<sample2__c> fetchDataList(Integer offsetNum, Integer limitNum){
+        return [
+                SELECT 
+                    Id , 
+                    Field895__c,
+                    Field757__c,
+                    Field856__c,
+                    GPC__c,
+                    Field348__c
+                FROM sample2__c
+                WITH SECURITY_ENFORCED
+                LIMIT :limitNum
+                OFFSET :((offsetNum - 1) * limitNum)
+            ];
+    }
+
+    @AuraEnabled(cacheable = true)
+    public static Integer countRecordOfList(){
+        Integer numberDatas = 0;
+        if (sample2__c.SObjectType.getDescribe().isAccessible()){
+            numberDatas = [SELECT COUNT() FROM sample2__c];
+        }
+        return numberDatas;
     }
 }
