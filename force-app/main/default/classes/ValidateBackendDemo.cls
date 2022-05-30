@@ -25,6 +25,7 @@ public with sharing class ValidateBackendDemo {
         System.debug('==== So row: ');
         System.debug(listData.size());
         for(List<String> rowData: listData ){
+            listColumnError = new List<Integer>();
             row = listData.indexOf(rowData);
             messageError +=row + ': {';
             for(Integer i = 0; i< rowData.size(); i++){
@@ -35,10 +36,10 @@ public with sharing class ValidateBackendDemo {
                     // if (field.type)
                     if (field.isRequired && String.isEmpty(dataColumn)) {
                         isColumnError = true;
-                        messageError += 'ten hang muc: '+field.fieldLabel + ',  id column: ' + column+ ', message error: ' + ':Required error! \n';
+                        messageError += '"'+field.fieldLabel + '": "Required error!", ';
                     } else if (dataColumn.length() > field.length) {
                         isColumnError = true;
-                        messageError += 'ten hang muc: '+field.fieldLabel + ',  id column: ' + column+ ', message error: ' + ':Max length error! \n';
+                        messageError += '"'+field.fieldLabel + '": "Max length error!", ';
                     } 
                     // TODO: validate data type
                     // Add to list column error if data in this column is error

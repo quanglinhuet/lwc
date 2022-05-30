@@ -16,7 +16,7 @@ public with sharing class ImportExcelDemo {
             System.debug('=== List column error: ');
             System.debug(result.validateErrorCollumns.toString());
             
-            return result.validateErrorMessages.values();
+            return JSON.deserializeUntyped(Json.serialize(result));
         }
         result.success = true;
         result.indexsErrorRecord = new List<Integer>();
