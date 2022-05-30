@@ -9,8 +9,6 @@ import editRecordsInList from "@salesforce/apex/LpqBuyerHelpers.editRecordsInLis
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
-import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
-import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
 
 const TYPE_MESS = {
     Error: "error",
