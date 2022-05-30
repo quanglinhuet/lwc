@@ -83,62 +83,7 @@
           <div class="slds-backdrop slds-backdrop_open"></div>
         </template>
         <template if:true={importModalIsShow}>
-          <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
-            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
-            <div class="slds-modal__container">
-              <header class="slds-modal__header">
-                <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close"
-                  onclick={handleCloseImportModal}>
-                  <lightning-icon icon-name="utility:close" alternative-text="close" variant="inverse" size="small">
-                  </lightning-icon>
-                </button>
-                <h2 id="modal-heading-02" class="slds-text-heading_medium slds-hyphenate">Import from excel</h2>
-              </header>
-              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
-                <div class="file-loading-area">
-                  <lightning-icon class="status-icon" icon-name="action:approval" alternative-text="Approved"
-                    title="Approved" if:true={isImportSuccess}></lightning-icon>
-                  <div class="slds-form-element xlsx-selector">
-                    <div class="exampleHolder" if:true={fileXlsxLoading}>
-                      <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
-                    </div>
-                    <div class="slds-form-element__control">
-                      <div class="slds-file-selector slds-file-selector_files">
-                        <div class="slds-file-selector__dropzone">
-                          <input type="file" class="slds-file-selector__input slds-assistive-text" accept=".xlsx"
-                            onchange={handleUploadExcel} id="file-upload-input-107"
-                            aria-labelledby="file-selector-primary-label-105 file-selector-secondary-label106" />
-                          <label class="slds-file-selector__body" for="file-upload-input-107"
-                            id="file-selector-secondary-label106">
-                            <span class="slds-file-selector__button slds-button slds-button_neutral">
-                              <svg class="slds-button__icon slds-button__icon_left" aria-hidden="true">
-                                <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#upload"></use>
-                              </svg>Upload Files</span>
-                            <span class="slds-file-selector__text"
-                              if:true={fileXlsxReady}>{fileXlsxName}</span>
-                            <span class="slds-file-selector__text" if:false={fileXlsxReady}>or Drop
-                              Files</span>
-                          </label>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div if:true={invalidExcel}>
-                    <P> File input is invalid, please check file excel downloaded! </P>
-                  </div>
-                </div>
-              </div>
-              <footer class="slds-modal__footer">
-                <lightning-button variant="brand" label="Start Import" onclick={importExcelHandle} if:true={importEnable}>
-                </lightning-button>
-                <lightning-button variant="brand" label="Start Import" if:false={importEnable} disabled>
-                </lightning-button>
-                <lightning-button class="import-modal-close" variant="brand" label="Close" title="Close"
-                  onclick={handleCloseImportModal}></lightning-button>
-              </footer>
-            </div>
-          </section>
-          <div class="slds-backdrop slds-backdrop_open" role="presentation"></div>
+          <c-check-calcution-error onreloadtable={handleReloadTable} closemodal={importModalIsShow}></c-check-calcution-error>
         </template>
       </div>
     </template>

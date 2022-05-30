@@ -7,7 +7,7 @@ import countRecordOfList from "@salesforce/apex/ImportExcelDemo.countRecordOfLis
 import deleteRecordInList from "@salesforce/apex/LpqBuyerHelpers.deleteRecordInList";
 import editRecordsInList from "@salesforce/apex/LpqBuyerHelpers.editRecordsInList";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
-import { loadScript } from 'lightning/platformResourceLoader';
+import { loadScript, loadStyle } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
 import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
 import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
@@ -55,31 +55,34 @@ export default class DataTableComponent extends LightningElement {
     @track totalPageInList = 1;
     @track columns = [
         {
-            label: "Buyer Code",
-            fieldName: "BuyerCode",
+            label: "*供給ソース",
+            fieldName: "Field895__c",
             type: "text",
             initialWidth: 150,
             editable: false
         },
         {
-            label: "Buyer Address",
-            fieldName: "BuyerAddress",
+            label: "品種",
+            fieldName: "Field757__c",
             type: "text",
             initialWidth: 300,
             editable: false
         },
         {
-            label: "Country Code",
-            fieldName: "CountryCode",
+            label: "ブロック",
+            fieldName: "Field856__c",
             initialWidth: 150,
             type: "text",
             editable: false
         },
         {
-            label: "ISO Country Code",
-            fieldName: "ISOCountryCode",
+            label: "*価格",
+            fieldName: "Field348__c",
             initialWidth: 150,
-            type: "text"
+            type: "text",
+            cellAttributes: {
+                class: {fieldName: 'errorCalcultion'}
+            } 
         },
         {
             label: "View",
@@ -122,16 +125,7 @@ export default class DataTableComponent extends LightningElement {
     @track countrySearchString = "";
 
     // XLSX properties
-    @track importModalIsShow = false
-    @track xlsxImportData;
-    @track fileXlsxName;
-    @track fileXlsxReady = false;
-    @track fileXlsxLoading = false;
-    @track fileContent = null;
-    @track allCountry = [];
-    @track isInImportProcess = false;
-    @track isImportSuccess = false;
-    @track excelHeader;
+    @track importModalIsShow = false;
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
@@ -160,21 +154,19 @@ export default class DataTableComponent extends LightningElement {
             this.error = undefined;
             let newDataTable = result.data.map((record) => {
                 let viewRecord = { Id: record.Id };
-                if (record.Name) {
-                    viewRecord.BuyerCode = record.Name;
+                if (record.Field895__c) {
+                    viewRecord.Field895__c = record.Field895__c;
                 }
-                if (record.BuyerAddress__c) {
-                    viewRecord.BuyerAddress = record.BuyerAddress__c;
+                if (record.Field757__c) {
+                    viewRecord.Field757__c = record.Field757__c;
                 }
-                if (record.CountryCode__r && record.CountryCode__r.Name) {
-                    viewRecord.CountryCode = record.CountryCode__r.Name;
+                if (record.Field856__c) {
+                    viewRecord.Field856__c = record.Field856__c;
                 }
-                if (
-                    record.ISOCountryCode_Alphabet3__r &&
-                    record.ISOCountryCode_Alphabet3__r.Name
-                ) {
-                    viewRecord.ISOCountryCode =
-                        record.ISOCountryCode_Alphabet3__r.Name;
+                if (record.Field348__c) {
+                    viewRecord.Field348__c =
+                        record.Field348__c;
+                    viewRecord.errorCalcultion = '';
                 }
                 return viewRecord;
             });
@@ -235,21 +227,19 @@ export default class DataTableComponent extends LightningElement {
                 this.error = undefined;
                 let newDataTable = result.map((record) => {
                     let viewRecord = { Id: record.Id };
-                    if (record.Name) {
-                        viewRecord.BuyerCode = record.Name;
+                    if (record.Field895__c) {
+                        viewRecord.Field895__c = record.Field895__c;
                     }
-                    if (record.BuyerAddress__c) {
-                        viewRecord.BuyerAddress = record.BuyerAddress__c;
+                    if (record.Field757__c) {
+                        viewRecord.Field757__c = record.Field757__c;
                     }
-                    if (record.CountryCode__r && record.CountryCode__r.Name) {
-                        viewRecord.CountryCode = record.CountryCode__r.Name;
+                    if (record.Field856__c) {
+                        viewRecord.Field856__c = record.Field856__c;
                     }
-                    if (
-                        record.ISOCountryCode_Alphabet3__r &&
-                        record.ISOCountryCode_Alphabet3__r.Name
-                    ) {
-                        viewRecord.ISOCountryCode =
-                            record.ISOCountryCode_Alphabet3__r.Name;
+                    if (record.Field348__c) {
+                        viewRecord.Field348__c =
+                            record.Field348__c;
+                        viewRecord.errorCalcultion = '';
                     }
                     return viewRecord;
                 });
@@ -421,6 +411,12 @@ export default class DataTableComponent extends LightningElement {
      * Render call back
      */
     renderedCallback() {
+        loadStyle(this, lpqresource + "/style/customDatatableStyle.css").then(()=>{
+            console.log("Loaded Successfully")
+        }).catch(error=>{ 
+            console.error("Error in loading the colors");
+            console.log(error);
+        })
         if (this.currentPage === 1) {
             this.disableBack = true;
         } else {
@@ -438,151 +434,9 @@ export default class DataTableComponent extends LightningElement {
         this.importModalIsShow = true;
     }
 
-    handleCloseImportModal() {
-        this.importModalIsShow = false;
-    }
-
-    @wire(getSampleFieldsInfo)
-    wiredFieldsInfo({error, data}) {
-        if (data) {
-            this.fieldsInfo = data;
-        } else if (error) {
-            console.log(error);
-        }
-    }
-
-    handleUploadExcel(event) {
-        this.isImportSuccess = false;
-        const uploadedFiles = event.target.files;
-        if (uploadedFiles.length > 0) {
-            this.fileXlsx = uploadedFiles[0];
-            this.excelToJSON(this.fileXlsx);
-        }
-    }
-
-    getFirstSheetData(workbook) {
-        var result = {};
-        if (workbook.SheetNames.length > 0) {
-            let roa = XLS.utils.sheet_to_json(
-                workbook.Sheets[workbook.SheetNames[0]],
-                { header: 1 }
-            );
-            if (roa.length && Array.isArray(roa)) {
-                this.excelHeader = [...roa[0]];
-                roa.shift();
-                result = roa;
-            }
-        }
-        return result;
-    }
-
-    excelToJSON(file) {
-        var reader = new FileReader();
-        reader.onload = (event) => {
-            let data = event.target.result;
-            this.fileContent = data;
-            let workbook = XLS.read(data, {
-                type: "binary"
-            });
-            let jsonObj = this.getFirstSheetData(workbook);
-            jsonObj = jsonObj.filter((row) => {
-                return row.length > 0;
-            });
-            this.xlsxImportData = jsonObj;
-            // console.log(jsonObj);
-        };
-        reader.onerror = function (ex) {
-            this.error = ex;
-            this.dispatchEvent(
-                new ShowToastEvent({
-                    title: "Error while reding the file",
-                    message: ex.message,
-                    variant: "error"
-                })
-            );
-        };
-        reader.onloadend = () => {
-            this.fileXlsxReady = true;
-            this.fileXlsxLoading = false;
-            this.fileXlsxName = file.name;
-        };
-
-        reader.onloadstart = () => {
-            this.fileXlsxReady = false;
-            this.fileXlsxLoading = true;
-        };
-
-        reader.readAsBinaryString(file);
-    }
-
-
-
-    async importExcelHandle() {
-        console.log(
-            "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
-        );
-        let startTime = performance.now();
-        const BLOCK_SIZE = 10000;
-        const REQUESTS_PER_TIME = 1;
-        console.log(`Block size: ${BLOCK_SIZE}`);
-        let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
-        this.fileXlsxLoading = true;
-        let promises = [];
-        let count = 0;
-        for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
-            count++;
-            promises.push(
-                importObjectFromExcel({
-                    listData: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
-                    startIndex: i,
-                    headers: [...this.excelHeader]
-                })
-            );
-            if (count % REQUESTS_PER_TIME === 0 || count === totalBlock) {
-                // eslint-disable-next-line no-await-in-loop
-                await Promise.allSettled(promises);
-            }
-        }
-        console.log("promises", promises);
-        await Promise.all(promises)
-            .then((values) => {
-                console.log(values);
-                this.isImportSuccess = true;
-                this.fileXlsxLoading = false;
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-        console.log (`Total time: ${performance.now() - startTime}`);   
-    }
-
-    roughSizeOfObject(object) {
-        var objectList = [];
-        var stack = [object];
-        var bytes = 0;
-
-        while (stack.length) {
-            let value = stack.pop();
-
-            if (typeof value === "boolean") {
-                bytes += 4;
-            } else if (typeof value === "string") {
-                bytes += value.length * 2;
-            } else if (typeof value === "number") {
-                bytes += 8;
-            } else if (
-                typeof value === "object" &&
-                objectList.indexOf(value) === -1
-            ) {
-                objectList.push(value);
-
-                // eslint-disable-next-line guard-for-in
-                for (let i in value) {
-                    stack.push(value[i]);
-                }
-            }
-        }
-        return bytes;
-    
+    handleReloadTable(event) {
+        this.importModalIsShow = event.detail.importModalIsShow;
+        let newData = event.detail.listData;
+        this.dataTable = [...this.dataTable, ...newData];
     }
 }
