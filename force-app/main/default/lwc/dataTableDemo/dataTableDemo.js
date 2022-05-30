@@ -16,50 +16,7 @@ export default class DataTableDemo extends LightningElement {
     lstIdSeleced = [];
     dataList;
     modeEdit = false;
-    @track lstdata;
-    @track numberSelected = 0;
-    @track disableDelete = true;
-    @track disableBack = true;
-    @track disableNext = true;
-    @track totalPageInList = 1;
-    @track columns = [
-        {
-            label: "*供給ソース",
-            fieldName: "Field895__c",
-            type: "text",
-            initialWidth: 150,
-            editable: false
-        },
-        {
-            label: "品種",
-            fieldName: "Field757__c",
-            type: "text",
-            initialWidth: 300,
-            editable: false
-        },
-        {
-            label: "ブロック",
-            fieldName: "Field856__c",
-            initialWidth: 150,
-            type: "text",
-            editable: false
-        },
-        {
-            label: "*価格",
-            fieldName: "Field348__c",
-            initialWidth: 150,
-            type: "text",
-            cellAttributes: {
-                class: {fieldName: 'errorCalcultion'}
-            } 
-        }
-    ];
-
-    @track record = {};
-    @track rowOffset = 0;
-    @track data = {};
-    @track currentPage = 1;
-    @track limitPage = 10;
+    
 
     /**
      * Render call back
@@ -209,8 +166,6 @@ export default class DataTableDemo extends LightningElement {
                 this.error = e;
             });
     };
-
-
 
     disableNavigation() {
         const totalPage = this.totalPageInList;

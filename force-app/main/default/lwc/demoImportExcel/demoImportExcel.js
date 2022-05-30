@@ -1,16 +1,24 @@
 import { LightningElement, track, wire } from "lwc";
 
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
-import { loadScript } from 'lightning/platformResourceLoader';
+import { loadScript, loadStyle } from "lightning/platformResourceLoader";
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
 import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
 import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
+import fetchDataList from "@salesforce/apex/ImportExcelDemo.fetchDataList";
+import countRecordOfList from "@salesforce/apex/ImportExcelDemo.countRecordOfList";
+import { refreshApex } from '@salesforce/apex';
 
 let XLS = {};
 let writeExcel = {};
 
-export default class DemoImportExcel extends LightningElement {
+const getNumberPage = (numberRecord, limitPage) => {
+    return numberRecord % limitPage === 0
+        ? numberRecord / limitPage
+        : ~~(numberRecord / limitPage) + 1;
+};
 
+export default class DemoImportExcel extends LightningElement {
     // XLSX properties
     @track importModalIsShow = false;
     @track xlsxImportData;
@@ -26,13 +34,60 @@ export default class DemoImportExcel extends LightningElement {
     // File error
     @track invalidExcel = false;
     @track urlErrorExcel;
+    @track lstdata;
+    @track numberSelected = 0;
+    @track disableDelete = true;
+    @track disableBack = true;
+    @track disableNext = true;
+    @track totalPageInList = 1;
+    @track record = {};
+    @track rowOffset = 0;
+    @track dataList;
+    @track data = {};
+    @track currentPage = 1;
+    @track limitPage = 10;
+    @track columns = [
+        {
+            label: "*供給ソース",
+            fieldName: "Field895__c",
+            type: "text",
+            initialWidth: 150,
+            editable: false
+        },
+        {
+            label: "品種",
+            fieldName: "Field757__c",
+            type: "text",
+            initialWidth: 300,
+            editable: false
+        },
+        {
+            label: "ブロック",
+            fieldName: "Field856__c",
+            initialWidth: 150,
+            type: "text",
+            editable: false
+        },
+        {
+            label: "*価格",
+            fieldName: "Field348__c",
+            initialWidth: 150,
+            type: "text",
+            cellAttributes: {
+                class: { fieldName: "errorCalcultion" }
+            }
+        }
+    ];
+
+    @track wiredRecordList;
+    @track wiredPageInfo;
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
     }
 
     @wire(getSampleFieldsInfo)
-    wiredFieldsInfo({error, data}) {
+    wiredFieldsInfo({ error, data }) {
         if (data) {
             this.fieldsInfo = data;
         } else if (error) {
@@ -40,9 +95,81 @@ export default class DemoImportExcel extends LightningElement {
         }
     }
 
+    /**
+     * Get data for list
+     * @param {*} result
+     */
+    @wire(fetchDataList, { offsetNum: '$currentPage', limitNum: 10 })
+    wiredDataList(result) {
+        this.wiredRecordList = result;
+        if (result.data && result.data.lstData) {
+            let newDataTable = result.data.lstData.map((record, index) => {
+                let viewRecord = { Id: record.Id };
+                if (record.Field895__c) {
+                    viewRecord.Field895__c = record.Field895__c;
+                }
+                if (record.Field757__c) {
+                    viewRecord.Field757__c = record.Field757__c;
+                }
+                if (record.Field856__c) {
+                    viewRecord.Field856__c = record.Field856__c;
+                }
+                if (record.Field348__c) {
+                    viewRecord.Field348__c = record.Field348__c;
+                }
+                if (
+                    result.data.lstFieldError[index].find((field) => {
+                        return field === "Field348__c";
+                    })
+                ) {
+                    viewRecord.errorCalcultion = "background-color-red";
+                } else {
+                    viewRecord.errorCalcultion = "";
+                }
+                return viewRecord;
+            });
+            console.log(newDataTable);
+            this.lstdata = newDataTable;
+            console.log(result);
+        } else if (result.error) {
+            this.lstdata = [];
+        }
+    }
+
+    /**
+     * Get Navigation Info
+     * @param {*} result
+     */
+    @wire(countRecordOfList)
+    wiredRecordOfList(result) {
+        this.wiredPageInfo = result;
+        if (result.data) {
+            this.error = undefined;
+            const totalPage = getNumberPage(result.data, this.limitPage);
+            this.totalPageInList = totalPage;
+            if (this.currentPage === 1) {
+                this.disableBack = true;
+            } else {
+                this.disableBack = false;
+            }
+            if (this.currentPage === this.totalPageInList) {
+                this.disableNext = true;
+            } else {
+                this.disableNext = false;
+            }
+        } else if (result.error) {
+            this.counts = 0;
+            this.error = result.error;
+        }
+    }
+
     connectedCallback() {
         // Loading sheetjs library
-        Promise.all([loadScript(this, lpqresource + "/lib/xlsx.full.min.js")], [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")])
+        Promise.all(
+            [loadScript(this, lpqresource + "/lib/xlsx.full.min.js")],
+            [loadScript(this, lpqresource + "/lib/write-excel-file.min.js")],
+            [loadStyle(this, lpqresource + "/style/customDatatableStyle.css")]
+        )
             .then(() => {
                 // eslint-disable-next-line no-undef
                 XLS = XLSX;
@@ -54,10 +181,10 @@ export default class DemoImportExcel extends LightningElement {
             });
     }
 
-     /**
+    /**
      * Render call back
      */
-      renderedCallback() {
+    renderedCallback() {
         if (this.currentPage === 1) {
             this.disableBack = true;
         } else {
@@ -70,18 +197,79 @@ export default class DemoImportExcel extends LightningElement {
         }
     }
 
+    /**
+     * Handle when click button import excel
+     */
+    async importExcelHandle() {
+        // Validate FrontEnd
+        this.invalidExcel = false;
+        let startTimeValidate = performance.now();
+        let validateResult = this.validateExcelInput();
+        // Handle when validate frontend error
+        if (!validateResult.valid) {
+            // export excel
+            // console.log(validateResult.errors);
+            this.invalidExcel = true;
+            this.showExcelValidateError(validateResult.errors);
+            console.log(
+                `Validate frontent took ${
+                    performance.now() - startTimeValidate
+                }`
+            );
+            return;
+        }
+        console.log(
+            "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
+        );
+        let startTime = performance.now();
+        const BLOCK_SIZE = 10000;
+        console.log(`Block size: ${BLOCK_SIZE}`);
+        this.fileXlsxLoading = true;
+
+        importObjectFromExcel({
+            listData: this.xlsxImportData,
+            startIndex: 0,
+            headers: [...this.excelHeader]
+        })
+            .then((data) => {
+                if (data.success) {
+                    console.log(data);
+                    this.isImportSuccess = true;
+                    this.fileXlsxLoading = false;
+                    // Refresh datatable
+                    refreshApex(this.wiredRecordList);
+                    refreshApex(this.wiredPageInfo);
+                } else {
+                    // Gen file excel
+                    this.isImportSuccess = false;
+                    this.invalidExcel = true;
+                    this.fileXlsxLoading = false;
+                    this.showExcelValidateError(
+                        this.getListErrorsValidate(data)
+                    );
+                }
+                console.log(`Total time: ${performance.now() - startTime}`);
+            })
+            .catch((error) => {
+                console.log(error);
+            });
+    }
+
     // Import xlsx
     openImportModal() {
         this.importModalIsShow = true;
     }
 
+    /**
+     * Handle close import model
+     */
     handleCloseImportModal() {
         this.importModalIsShow = false;
     }
 
     /**
      * Handle when click attack file excel
-     * @param {*} event 
+     * @param {*} event
      */
     handleUploadExcel(event) {
         this.isImportSuccess = false;
@@ -94,7 +282,7 @@ export default class DemoImportExcel extends LightningElement {
 
     /**
      * function get content of first sheet in excel workbook, exclude header
-     * @param {*} workbook 
+     * @param {*} workbook
      * @returns {Object} JSON Object
      */
     getFirstSheetData(workbook) {
@@ -156,64 +344,10 @@ export default class DemoImportExcel extends LightningElement {
         reader.readAsBinaryString(file);
     }
 
-
-    /**
-     * Handle when click button import excel
-     */
-    async importExcelHandle() {
-        // Validate FrontEnd
-        this.invalidExcel = false;
-        let startTimeValidate = performance.now();
-        let validateResult = this.validateExcelInput();
-        // Handle when validate frontend error
-        if (!validateResult.valid) {
-            // export excel
-            // console.log(validateResult.errors);
-            this.invalidExcel = true;
-            this.showExcelValidateError(validateResult.errors);
-            console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
-            return;
-        } 
-        console.log(
-            "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
-        );
-        let startTime = performance.now();
-        const BLOCK_SIZE = 10000;
-        console.log(`Block size: ${BLOCK_SIZE}`);
-        this.fileXlsxLoading = true;
-
-        importObjectFromExcel({
-            listData: this.xlsxImportData,
-            startIndex: 0,
-            headers: [...this.excelHeader]
-        })
-            .then((data) => {
-                if (data.success) {
-                    console.log(data);
-                    this.isImportSuccess = true;
-                    this.fileXlsxLoading = false;
-                    // Refresh datatable
-                    console.log('Mùi và Toàn thật tuyệt vời!');
-                    this.template.querySelector('c-data-table-demo').refreshData();
-                } else {
-                    // Gen file excel
-                    this.isImportSuccess = false;
-                    this.invalidExcel = true;
-                    this.fileXlsxLoading = false;
-                    this.showExcelValidateError(this.getListErrorsValidate(data));
-                }
-                console.log (`Total time: ${performance.now() - startTime}`); 
-            })
-            .catch((error) => {
-                console.log(error);
-            });
-          
-    }
-
     /**
      * Function caculate size of object
      * @param {*} object object to caculate size
-     * @returns {Number} size of object in bytes 
+     * @returns {Number} size of object in bytes
      */
     roughSizeOfObject(object) {
         var objectList = [];
@@ -242,7 +376,6 @@ export default class DemoImportExcel extends LightningElement {
             }
         }
         return bytes;
-    
     }
 
     /**
@@ -255,9 +388,11 @@ export default class DemoImportExcel extends LightningElement {
         let errors = new Map();
         let fieldsInfo = [...this.fieldsInfo];
         this.excelHeader.forEach((header) => {
-            types.push(fieldsInfo.find((item) => {
-                return item.fieldLabel === header;
-            }));
+            types.push(
+                fieldsInfo.find((item) => {
+                    return item.fieldLabel === header;
+                })
+            );
         });
         this.xlsxImportData.forEach((element, index) => {
             let rowValidateErrorObject = this.validateRow(element, types);
@@ -268,22 +403,22 @@ export default class DemoImportExcel extends LightningElement {
         });
 
         return {
-            valid : valid,
+            valid: valid,
             errors: errors
-        }
+        };
     }
 
     /**
      * Validate special row of file excel
-     * @param {*} row 
-     * @param {*} types 
+     * @param {*} row
+     * @param {*} types
      * @returns {Object} validate result Object
      */
     validateRow(row, types) {
         let rowValid = true;
         let message = {};
         let invalidColumns = [];
-        
+
         for (let i = 0; i < row.length; i++) {
             let cellValidateError = this.validateCell(row[i], types[i]);
             if (cellValidateError != null) {
@@ -293,7 +428,7 @@ export default class DemoImportExcel extends LightningElement {
             }
         }
 
-        if(rowValid) {
+        if (rowValid) {
             return null;
         }
 
@@ -306,23 +441,27 @@ export default class DemoImportExcel extends LightningElement {
     /**
      * Function validate special cell of row
      * @param {*} value Value of cell
-     * @param {*} type Type of cell 
+     * @param {*} type Type of cell
      * @returns {String} error message, if valid return ''.
      */
     validateCell(value, type) {
         if (type) {
             if (!value && type.isRequired) {
-                return 'Must not empty';
+                return "Must not empty";
             }
-    
+
             // type demo : String, number
-            if (value && (type.type === 'NUMBER' && isNaN(+value) || (type.type === 'STRING' && typeof value !== 'string'))) {
-                return 'Type invalid';
+            if (
+                value &&
+                ((type.type === "NUMBER" && isNaN(+value)) ||
+                    (type.type === "STRING" && typeof value !== "string"))
+            ) {
+                return "Type invalid";
             }
-    
+
             // length
-            if ((value+'').length > type.length) {
-                return 'Length error';
+            if ((value + "").length > type.length) {
+                return "Length error";
             }
         }
         return null;
@@ -332,7 +471,7 @@ export default class DemoImportExcel extends LightningElement {
      * Function create excel file with infomation of errors.
      * @param {*} errors error object
      */
-    async showExcelValidateError (errors) {
+    async showExcelValidateError(errors) {
         const wb = XLS.read(this.fileContent, {
             type: "binary"
         });
@@ -341,20 +480,20 @@ export default class DemoImportExcel extends LightningElement {
             header: 1,
             raw: true
         });
-        
+
         let data = [];
         let header = sheetJson[0].map((elem) => {
             return {
                 value: elem
-            }
+            };
         });
-        header.push({value: 'エラー内容'});
+        header.push({ value: "エラー内容" });
         data.push(header);
         sheetJson.splice(0, 1);
         // Create excel content with current excel data append response errors
         let rows = sheetJson.map((row, index) => {
             let rowDataTemp = [...row];
-            let rowData = []
+            let rowData = [];
             for (let i = 0; i < header.length; i++) {
                 let temp = {
                     type: String,
@@ -365,51 +504,58 @@ export default class DemoImportExcel extends LightningElement {
             if (errors.has(index)) {
                 let error = errors.get(index);
                 rowData[rowData.length - 1].value = error.message;
-                error.invalidColumns.forEach(colIndex => {
-                    rowData[colIndex].backgroundColor = '#FF6161';
-                })
+                error.invalidColumns.forEach((colIndex) => {
+                    rowData[colIndex].backgroundColor = "#FF6161";
+                });
             }
             return rowData;
         });
         data = [...data, ...rows];
         await writeExcel(data, {
-            fileName: 'file.xlsx'
-        })
+            fileName: "file.xlsx"
+        });
     }
 
     /**
      * Create errors object from apex response. For creating file excel with error infomation.
-     * @param {*} data 
-     * @returns 
+     * @param {*} data
+     * @returns
      */
     getListErrorsValidate(data) {
-        let mapOfFieldInfo = this.getMapOfFieldByHeader([...this.fieldsInfo], [...this.excelHeader]);
+        let mapOfFieldInfo = this.getMapOfFieldByHeader(
+            [...this.fieldsInfo],
+            [...this.excelHeader]
+        );
         let mapErrors = new Map();
-        for(const [key, value] of Object.entries(data.saveResults)) {
+        for (const [key, value] of Object.entries(data.saveResults)) {
             let message = "";
             let invalidColumns = [];
-            value.errors.forEach(error => {
-                error.fields.forEach(field =>{
+            value.errors.forEach((error) => {
+                error.fields.forEach((field) => {
                     let fieldName = field.toLowerCase();
-                    let col = mapOfFieldInfo.has(fieldName) && mapOfFieldInfo.get(fieldName) ? mapOfFieldInfo.get(fieldName) : undefined;
+                    let col =
+                        mapOfFieldInfo.has(fieldName) &&
+                        mapOfFieldInfo.get(fieldName)
+                            ? mapOfFieldInfo.get(fieldName)
+                            : undefined;
                     if (col) {
                         invalidColumns.push(col);
                     }
                 });
-                message += error.message + ',';
+                message += error.message + ",";
             });
             mapErrors.set(parseInt(key, 10), {
                 invalidColumns: invalidColumns,
                 message: message
-            })
+            });
         }
         return mapErrors;
     }
 
     /**
      * Mapping excel header to Apex SObject field.
-     * @param {*} fieldsInfo 
-     * @param {*} headers 
+     * @param {*} fieldsInfo
+     * @param {*} headers
      * @returns {Map} map of FieldName to index in header. Ex: "field_101" => 2
      */
     getMapOfFieldByHeader(fieldsInfo, headers) {
@@ -429,4 +575,106 @@ export default class DemoImportExcel extends LightningElement {
         return map;
     }
 
+    disableNavigation() {
+        const totalPage = this.totalPageInList;
+        let test = this.template.querySelectorAll("lightning-button");
+        for (let i = 0; i < test.length; i++) {
+            if (test[i].name === "previous") {
+                if (this.currentPage === 1) test[i].disabled = true;
+            } else if (test[i].name === "next") {
+                if (this.currentPage === totalPage) test[i].disabled = true;
+            }
+        }
+    }
+
+    /**
+     * Handle back or next
+     * @param {*} event
+     */
+    handleNavigation(event) {
+        const action = event.target;
+        switch (action.name) {
+            case "previous":
+                if (this.currentPage > 1) {
+                    this.currentPage -= 1;
+                    this.getDataList(this.limitPage);
+                }
+                break;
+            case "next":
+                if (this.currentPage < this.totalPageInList) {
+                    this.currentPage += 1;
+                    this.getDataList(this.limitPage);
+                }
+                break;
+            default:
+                console.log("a", action);
+                break;
+        }
+        this.rowOffset = (this.currentPage - 1) * this.limitPage;
+    }
+
+    /**
+     * Get data of list
+     */
+    getDataList (limit) {
+        console.log(limit);
+        fetchDataList({ offsetNum: this.currentPage, limitNum: limit })
+            .then((result) => {
+                if (result.lstData) {
+                    let newDataTable = result.lstData.map((record, index) => {
+                        let viewRecord = { Id: record.Id };
+                        if (record.Field895__c) {
+                            viewRecord.Field895__c = record.Field895__c;
+                        }
+                        if (record.Field757__c) {
+                            viewRecord.Field757__c = record.Field757__c;
+                        }
+                        if (record.Field856__c) {
+                            viewRecord.Field856__c = record.Field856__c;
+                        }
+                        if (record.Field348__c) {
+                            viewRecord.Field348__c = record.Field348__c;
+                        }
+                        if (result.lstFieldError[index].find(field => {
+                            return field === 'Field348__c';
+                        })) {
+                            viewRecord.errorCalcultion = 'background-color-red';
+                        } else {
+                            viewRecord.errorCalcultion = '';
+                        }
+                        return viewRecord;
+                    });
+                    console.log(newDataTable);
+                    this.lstdata = newDataTable;
+                    console.log(result);
+                } else if (result.error) {
+                    this.lstdata = [];
+                }
+            })
+            .catch((e) => {
+                this.error = e;
+            });
+    }
+
+    getPageInfo() {
+        countRecordOfList()
+            .then((result) => {
+                this.error = undefined;
+                const totalPage = getNumberPage(result, this.limitPage);
+                this.totalPageInList = totalPage;
+                if (this.currentPage === 1) {
+                    this.disableBack = true;
+                } else {
+                    this.disableBack = false;
+                }
+                if (this.currentPage === this.totalPageInList) {
+                    this.disableNext = true;
+                } else {
+                    this.disableNext = false;
+                }
+            })
+            .catch((e) => {
+                this.error = e;
+            });
+    }
 }
