@@ -7,7 +7,6 @@ public with sharing class ValidateBackendDemo {
         Integer abcd;
         Boolean isColumnError = false;
         Boolean isRowError = false;
-        Map<String,String> messageError = new Map<String,String>();
         FieldValidateConditionEntity field = new FieldValidateConditionEntity();
         String dataColumn = '';
         LpqImportResult result = new LpqImportResult();
@@ -15,7 +14,8 @@ public with sharing class ValidateBackendDemo {
 
         // Khởi tạo List Integer chứa list các cột lỗi
         List<Integer> listColumnError = new List<Integer>();
-
+        // Khởi tạo message lỗi
+        Map<String,String> messageError = new Map<String,String>();
         // Khởi tạo list đối tượng chứa thông tin field Infor
         List<FieldValidateConditionEntity> listFieldInfor = new List<FieldValidateConditionEntity>();
         // Call hàm get FieldsInfor lấy về list thông tin các trường 
@@ -79,8 +79,3 @@ public with sharing class ValidateBackendDemo {
         return result;
     }
 }
-
-
-
-
-
