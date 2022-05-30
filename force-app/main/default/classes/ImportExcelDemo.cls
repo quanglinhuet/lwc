@@ -27,6 +27,15 @@ public with sharing class ImportExcelDemo {
         return JSON.deserializeUntyped(JSON.serialize(viewObject));
     }
 
+    @AuraEnabled(cacheable = true)
+    public static Integer countRecordOfList(){
+        Integer numberDatas = 0;
+        if (sample2__c.SObjectType.getDescribe().isAccessible()){
+            numberDatas = [SELECT COUNT() FROM sample2__c];
+        }
+        return numberDatas;
+    }
+
 
 
     @AuraEnabled

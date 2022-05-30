@@ -192,6 +192,9 @@ export default class DemoImportExcel extends LightningElement {
                     console.log(data);
                     this.isImportSuccess = true;
                     this.fileXlsxLoading = false;
+                    // Refresh datatable
+                    console.log('Mùi và Toàn thật tuyệt vời!');
+                    this.template.querySelector('c-data-table-demo').refreshData();
                 } else {
                     // Gen file excel
                     this.isImportSuccess = false;
@@ -425,4 +428,5 @@ export default class DemoImportExcel extends LightningElement {
         });
         return map;
     }
+
 }

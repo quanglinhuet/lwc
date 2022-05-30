@@ -1,4 +1,4 @@
-import { LightningElement, wire, track } from "lwc";
+import { LightningElement, wire, track, api } from "lwc";
 
 import fetchDataList from "@salesforce/apex/ImportExcelDemo.fetchDataList";
 import countRecordOfList from "@salesforce/apex/ImportExcelDemo.countRecordOfList";
@@ -54,45 +54,70 @@ export default class DataTableDemo extends LightningElement {
             } 
         }
     ];
+
     @track record = {};
     @track rowOffset = 0;
     @track data = {};
-    @track error;
     @track currentPage = 1;
     @track limitPage = 10;
+
+    /**
+     * Render call back
+     */
+    renderedCallback() {
+        loadStyle(this, lpqresource + "/style/customDatatableStyle.css").then(()=>{
+            //
+        }).catch(error=>{ 
+            console.error("Error in loading the colors");
+            console.log(error);
+        })
+        if (this.currentPage === 1) {
+            this.disableBack = true;
+        } else {
+            this.disableBack = false;
+        }
+        if (this.currentPage === this.totalPageInList) {
+            this.disableNext = true;
+        } else {
+            this.disableNext = false;
+        }
+    }
+
     /**
      * Get data for list
      * @param {*} result
      */
     @wire(fetchDataList, { offsetNum: 1, limitNum: 10 })
     wiredDataList(result) {
-        // this.dataList = result;
-        // if (result.data) {
-        //     this.error = undefined;
-        //     let newDataTable = result.data.map((record) => {
-        //         let viewRecord = { Id: record.Id };
-        //         if (record.Field895__c) {
-        //             viewRecord.Field895__c = record.Field895__c;
-        //         }
-        //         if (record.Field757__c) {
-        //             viewRecord.Field757__c = record.Field757__c;
-        //         }
-        //         if (record.Field856__c) {
-        //             viewRecord.Field856__c = record.Field856__c;
-        //         }
-        //         if (record.Field348__c) {
-        //             viewRecord.Field348__c =
-        //                 record.Field348__c;
-        //             viewRecord.errorCalcultion = '';
-        //         }
-        //         return viewRecord;
-        //     });
-        //     this.lstdata = newDataTable;
+        if (result.data && result.data.lstData) {
+            let newDataTable = result.data.lstData.map((record, index) => {
+                let viewRecord = { Id: record.Id };
+                if (record.Field895__c) {
+                    viewRecord.Field895__c = record.Field895__c;
+                }
+                if (record.Field757__c) {
+                    viewRecord.Field757__c = record.Field757__c;
+                }
+                if (record.Field856__c) {
+                    viewRecord.Field856__c = record.Field856__c;
+                }
+                if (record.Field348__c) {
+                    viewRecord.Field348__c = record.Field348__c;
+                }
+                if (result.data.lstFieldError[index].find(field => {
+                    return field === 'Field348__c';
+                })) {
+                    viewRecord.errorCalcultion = 'background-color-red';
+                } else {
+                    viewRecord.errorCalcultion = '';
+                }
+                return viewRecord;
+            });
+            this.lstdata = newDataTable;
             console.log(result);
-        // } else if (result.error) {
-        //     this.lstdata = [];
-        //     this.error = result.error;
-        // }
+        } else if (result.error) {
+            this.lstdata = [];
+        }
     }
 
     /**
@@ -120,33 +145,43 @@ export default class DataTableDemo extends LightningElement {
             this.error = result.error;
         }
     }
+
     /**
      * Get data of list
      */
     getDataList = (limit) => {
+        console.log(limit);
         fetchDataList({ offsetNum: this.currentPage, limitNum: limit })
             .then((result) => {
-                this.error = undefined;
-                let newDataTable = result.map((record) => {
-                    let viewRecord = { Id: record.Id };
-                    if (record.Field895__c) {
-                        viewRecord.Field895__c = record.Field895__c;
-                    }
-                    if (record.Field757__c) {
-                        viewRecord.Field757__c = record.Field757__c;
-                    }
-                    if (record.Field856__c) {
-                        viewRecord.Field856__c = record.Field856__c;
-                    }
-                    if (record.Field348__c) {
-                        viewRecord.Field348__c =
-                            record.Field348__c;
-                        viewRecord.errorCalcultion = '';
-                    }
-                    return viewRecord;
-                });
-
-                this.lstdata = newDataTable;
+                if (result.lstData) {
+                    let newDataTable = result.lstData.map((record, index) => {
+                        let viewRecord = { Id: record.Id };
+                        if (record.Field895__c) {
+                            viewRecord.Field895__c = record.Field895__c;
+                        }
+                        if (record.Field757__c) {
+                            viewRecord.Field757__c = record.Field757__c;
+                        }
+                        if (record.Field856__c) {
+                            viewRecord.Field856__c = record.Field856__c;
+                        }
+                        if (record.Field348__c) {
+                            viewRecord.Field348__c = record.Field348__c;
+                        }
+                        if (result.lstFieldError[index].find(field => {
+                            return field === 'Field348__c';
+                        })) {
+                            viewRecord.errorCalcultion = 'background-color-red';
+                        } else {
+                            viewRecord.errorCalcultion = '';
+                        }
+                        return viewRecord;
+                    });
+                    this.lstdata = newDataTable;
+                    console.log(result);
+                } else if (result.error) {
+                    this.lstdata = [];
+                }
             })
             .catch((e) => {
                 this.error = e;
@@ -215,25 +250,11 @@ export default class DataTableDemo extends LightningElement {
         this.rowOffset = (this.currentPage - 1) * this.limitPage;
     }
 
-    /**
-     * Render call back
+    @api
+      /**
+     * Refresh data of datatable
      */
-    renderedCallback() {
-        loadStyle(this, lpqresource + "/style/customDatatableStyle.css").then(()=>{
-            console.log("Loaded Successfully")
-        }).catch(error=>{ 
-            console.error("Error in loading the colors");
-            console.log(error);
-        })
-        if (this.currentPage === 1) {
-            this.disableBack = true;
-        } else {
-            this.disableBack = false;
-        }
-        if (this.currentPage === this.totalPageInList) {
-            this.disableNext = true;
-        } else {
-            this.disableNext = false;
-        }
+    refreshData() {
+        this.getDataList(10);
     }
 }
