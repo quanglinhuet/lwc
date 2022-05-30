@@ -37,17 +37,6 @@
             disabled={disableNext} icon-position="right" name="next"></lightning-button>
         </div>
         <!--  Pagination buttons end -->
-  
-        <!-- send mail aria -->
-        <div class="slds-align_absolute-center pagging-aria">
-          <div class="slds-form-element email-report-input">
-            <div class="slds-form-element__control slds-input-has-fixed-addon">
-              <span class="slds-form-element__addon">Email</span>
-              <input type="text" aria-labelledby="fixed-text-label fixed-text-addon-pre fixed-text-addon-post" class="slds-input" />
-            </div>
-          </div>
-          <lightning-button label="Send" variant="brand" name="send-mail-btn"></lightning-button>
-        </div>
     
         <!--  Preview detail popup start -->
         <template if:true={bShowModal}>
@@ -88,14 +77,4 @@
       </div>
     </template>
   </lightning-card>
-    <!--  Preview detail popup end -->
-  
-    <!-- Setting Page Start-->
-    <!-- <template if:false={modeList}>
-        <c-setting-page lst-field={getDataForTableSetting} all-field={allFiled} update-data-table={updateDataTable} close-setting={closeSetting}></c-setting-page>
-      </template> -->
-    <!-- Setting Page End-->
-    <!-- <div>
-      <c-add-edit-personal-info input-data={infoData} all-field={allFiled} onrefresh={refreshTableList}></c-add-edit-personal-info>
-    </div> -->
 </template>
