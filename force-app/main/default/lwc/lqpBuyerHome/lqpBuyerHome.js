@@ -29,84 +29,14 @@ const getToastMessage = (type, mess) => {
     return eventMessSuccess;
 };
 
-const jsonParse = (str, defaultVal = null) => {
-    try {
-        return JSON.parse(str);
-    } catch {
-        return defaultVal;
-    }
-};
-
-let XLS = {};
-let writeExcel = {};
-
 export default class DataTableComponent extends LightningElement {
-    lstIdSeleced = [];
     dataList;
-    modeEdit = false;
-    draftValues = [];
     @track numberSelected = 0;
     @track disableDelete = true;
     @track disableBack = true;
     @track disableNext = true;
     @track totalPageInList = 1;
-    @track columns = [
-        {
-            label: "*供給ソース",
-            fieldName: "Field895__c",
-            type: "text",
-            initialWidth: 150,
-            editable: false
-        },
-        {
-            label: "品種",
-            fieldName: "Field757__c",
-            type: "text",
-            initialWidth: 300,
-            editable: false
-        },
-        {
-            label: "ブロック",
-            fieldName: "Field856__c",
-            initialWidth: 150,
-            type: "text",
-            editable: false
-        },
-        {
-            label: "*価格",
-            fieldName: "Field348__c",
-            initialWidth: 150,
-            type: "text",
-            cellAttributes: {
-                class: {fieldName: 'errorCalcultion'}
-            } 
-        },
-        {
-            label: "View",
-            type: "button-icon",
-            typeAttributes: {
-                name: "preview_detail",
-                iconName: "action:preview",
-                title: "Preview",
-                variant: "border-filled",
-                alternativeText: "View"
-            }
-        },
-        {
-            label: "Delete",
-            type: "button-icon",
-            fieldName: "id",
-            typeAttributes: {
-                iconName: "utility:delete",
-                title: "Delete",
-                variant: "border-filled",
-                alternativeText: "Delete",
-                name: "delete_record"
-            }
-        }
-    ];
     @track record = {};
-    @track rowOffset = 0;
     @track data = {};
     @track bShowModal = false;
     @track error;
@@ -114,20 +44,10 @@ export default class DataTableComponent extends LightningElement {
     @track limitPage = 10;
     @track dataTable;
     @track modeList = true;
-    @track allFiled;
-    @track getDataForTableSetting;
-    @track infoData = { first_name__c: "a" };
-    // Select box
-    @track isoCountryCodeDisplayed = "";
-    @track countrySearchString = "";
 
     // XLSX properties
     @track importModalIsShow = false;
-
-    get importEnable() {
-        return this.fileXlsxReady && !this.isInImportProcess;
-    }
-
+    
     /**
      * Get data for list
      * @param {*} result
@@ -208,24 +128,6 @@ export default class DataTableComponent extends LightningElement {
      */
     closeModal() {
         this.bShowModal = false;
-    }
-
-    deleteSelected() {
-        if (this.numberSelected > 0) {
-            deleteRecordInList({ lstRecordId: this.lstIdSeleced })
-                .then(() => {
-                    this.dispatchEvent(
-                        getToastMessage(
-                            TYPE_MESS.Success,
-                            `${this.numberSelected} records deleted`
-                        )
-                    );
-                    refreshApex(this.dataList);
-                })
-                .catch((error) => {
-                    this.dispatchEvent(getToastMessage(TYPE_MESS.Error, error));
-                });
-        }
     }
 
     refreshTableList = (event) => {
