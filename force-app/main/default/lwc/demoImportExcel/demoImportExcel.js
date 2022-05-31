@@ -3,8 +3,7 @@ import { LightningElement, track, wire } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { loadScript } from 'lightning/platformResourceLoader';
 import lpqresource from "@salesforce/resourceUrl/lpqresource";
-import importObjectFromExcel from "@salesforce/apex/ImportExcelDemo.importObjectFromExcel";
-import getSampleFieldsInfo from "@salesforce/apex/ImportExcelDemo.getSampleFieldsInfo";
+import validateExcelData from "@salesforce/apex/ImportExcelDemo.validateExcelData";
 
 let XLS = {};
 let writeExcel = {};
@@ -29,15 +28,6 @@ export default class DemoImportExcel extends LightningElement {
 
     get importEnable() {
         return this.fileXlsxReady && !this.isInImportProcess;
-    }
-
-    @wire(getSampleFieldsInfo)
-    wiredFieldsInfo({error, data}) {
-        if (data) {
-            this.fieldsInfo = data;
-        } else if (error) {
-            console.log(error);
-        }
     }
 
     connectedCallback() {
@@ -146,152 +136,33 @@ export default class DemoImportExcel extends LightningElement {
 
 
     async importExcelHandle() {
-        // Validate FrontEnd
-        this.invalidExcel = false;
-        // let validateResult = this.validateExcelInput();
-
-        // if (!validateResult.valid) {
-        //     // export excel
-        //     // console.log(validateResult.errors);
-        //     this.invalidExcel = true;
-        //     this.showExcelValidateError(validateResult.errors);
-        //     return;
-        // } 
-        console.log(
-            "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
-        );
-        let startTime = performance.now();
-        const BLOCK_SIZE = 10000;
-        const REQUESTS_PER_TIME = 1;
-        console.log(`Block size: ${BLOCK_SIZE}`);
-        let totalBlock = Math.ceil(this.xlsxImportData.length / BLOCK_SIZE);
         this.fileXlsxLoading = true;
-        let promises = [];
-        let count = 0;
-        for (let i = 0; i < this.xlsxImportData.length; i += BLOCK_SIZE) {
-            count++;
-            promises.push(
-                importObjectFromExcel({
-                    listData: this.xlsxImportData.slice(i, i + BLOCK_SIZE),
-                    startIndex: i,
+        // Validate backend
+        validateExcelData({
+                    listData: this.xlsxImportData,
+                    startIndex: 0,
                     headers: [...this.excelHeader]
                 })
-            );
-            if (count % REQUESTS_PER_TIME === 0 || count === totalBlock) {
-                // eslint-disable-next-line no-await-in-loop
-                await Promise.allSettled(promises);
-            }
-        }
-        await Promise.all(promises)
-            .then((values) => {
-                console.log(values);
+            .then((value) => {
+                if (!value.isInputValid) {
+                    const errors = this.getListErrorsValidate(value);
+                    this.showExcelValidateError(errors);
+                    return;
+                }
+                console.log('File excel is valid!');
                 this.isImportSuccess = true;
                 this.fileXlsxLoading = false;
             })
             .catch((error) => {
                 console.log(error);
             });
-        console.log (`Total time: ${performance.now() - startTime}`);   
     }
 
-    roughSizeOfObject(object) {
-        var objectList = [];
-        var stack = [object];
-        var bytes = 0;
-
-        while (stack.length) {
-            let value = stack.pop();
-
-            if (typeof value === "boolean") {
-                bytes += 4;
-            } else if (typeof value === "string") {
-                bytes += value.length * 2;
-            } else if (typeof value === "number") {
-                bytes += 8;
-            } else if (
-                typeof value === "object" &&
-                objectList.indexOf(value) === -1
-            ) {
-                objectList.push(value);
-
-                // eslint-disable-next-line guard-for-in
-                for (let i in value) {
-                    stack.push(value[i]);
-                }
-            }
-        }
-        return bytes;
-    
-    }
-
-    validateExcelInput() {
-        const types = [];
-        let valid = true;
-        let errors = new Map();
-        let fieldsInfo = [...this.fieldsInfo];
-        this.excelHeader.forEach((header) => {
-            types.push(fieldsInfo.find((item) => {
-                return item.fieldLabel === header;
-            }));
-        });
-        this.xlsxImportData.forEach((element, index) => {
-            let rowValidateErrorObject = this.validateRow(element, types);
-            if (rowValidateErrorObject) {
-                valid = false;
-                errors.set(index, rowValidateErrorObject);
-            }
-        });
-
-        return {
-            valid : valid,
-            errors: errors
-        }
-    }
-
-    validateRow(row, types) {
-        let rowValid = true;
-        let message = {};
-        let invalidColumns = [];
-        
-        for (let i = 0; i < row.length; i++) {
-            let cellValidateError = this.validateCell(row[i], types[i]);
-            if (cellValidateError != null) {
-                rowValid = false;
-                message[this.excelHeader[i]] = cellValidateError;
-                invalidColumns.push(i);
-            }
-        }
-
-        if(rowValid) {
-            return null;
-        }
-
-        return {
-            invalidColumns: invalidColumns,
-            message: JSON.stringify(message)
-        };
-    }
-
-    validateCell(value, type) {
-        if (type) {
-            if (!value && type.isRequired) {
-                return 'Must not empty';
-            }
-    
-            // type demo : String, number
-            if (value && (type.type === 'NUMBER' && isNaN(+value) || (type.type === 'STRING' && typeof value !== 'string'))) {
-                return 'Type invalid';
-            }
-    
-            // length
-            if ((value+'').length > type.length) {
-                return 'Length error';
-            }
-        }
-        return null;
-    }
-
-    async showExcelValidateError (errors) {
+    /**
+     * Function create excel file with infomation of errors.
+     * @param {*} errors error object
+     */
+     async showExcelValidateError (errors) {
         const wb = XLS.read(this.fileContent, {
             type: "binary"
         });
@@ -310,13 +181,17 @@ export default class DemoImportExcel extends LightningElement {
         header.push({value: 'エラー内容'});
         data.push(header);
         sheetJson.splice(0, 1);
+        sheetJson = sheetJson.filter((row) => {
+            return row.length > 0;
+        });
+        // Create excel content with current excel data append response errors
         let rows = sheetJson.map((row, index) => {
             let rowDataTemp = [...row];
             let rowData = []
             for (let i = 0; i < header.length; i++) {
                 let temp = {
                     type: String,
-                    value: rowDataTemp[i]
+                    value: rowDataTemp[i] ? rowDataTemp[i] + '' : ''
                 };
                 rowData.push(temp);
             }
@@ -330,9 +205,26 @@ export default class DemoImportExcel extends LightningElement {
             return rowData;
         });
         data = [...data, ...rows];
-        // console.log(data);
         await writeExcel(data, {
             fileName: 'file.xlsx'
         })
+    }
+
+    /**
+     * Create errors object from apex response. For creating file excel with error infomation.
+     * @param {*} data 
+     * @returns 
+     */
+    getListErrorsValidate(data) {
+        let mapErrors = new Map();
+        data.indexsErrorRecord.forEach(rowNumber => {
+            let message = data.validateErrorMessages[rowNumber+''];
+            let invalidColumns = data.validateErrorCollumns[rowNumber+''];
+            mapErrors.set(parseInt(rowNumber, 10), {
+                invalidColumns: invalidColumns,
+                message: message
+            })
+        })
+        return mapErrors;
     }
 }
