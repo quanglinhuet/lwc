@@ -162,18 +162,18 @@ export default class DemoImportExcel extends LightningElement {
      */
     async importExcelHandle() {
         // Validate FrontEnd
-        this.invalidExcel = false;
-        let startTimeValidate = performance.now();
-        let validateResult = this.validateExcelInput();
-        // Handle when validate frontend error
-        if (!validateResult.valid) {
-            // export excel
-            // console.log(validateResult.errors);
-            this.invalidExcel = true;
-            this.showExcelValidateError(validateResult.errors);
-            console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
-            return;
-        } 
+        // this.invalidExcel = false;
+        // let startTimeValidate = performance.now();
+        // let validateResult = this.validateExcelInput();
+        // // Handle when validate frontend error
+        // if (!validateResult.valid) {
+        //     // export excel
+        //     // console.log(validateResult.errors);
+        //     this.invalidExcel = true;
+        //     this.showExcelValidateError(validateResult.errors);
+        //     console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
+        //     return;
+        // } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
@@ -351,6 +351,9 @@ export default class DemoImportExcel extends LightningElement {
         header.push({value: 'エラー内容'});
         data.push(header);
         sheetJson.splice(0, 1);
+        sheetJson = sheetJson.filter((row) => {
+            return row.length > 0;
+        });
         // Create excel content with current excel data append response errors
         let rows = sheetJson.map((row, index) => {
             let rowDataTemp = [...row];
@@ -358,7 +361,7 @@ export default class DemoImportExcel extends LightningElement {
             for (let i = 0; i < header.length; i++) {
                 let temp = {
                     type: String,
-                    value: rowDataTemp[i]
+                    value: rowDataTemp[i]+ ''
                 };
                 rowData.push(temp);
             }

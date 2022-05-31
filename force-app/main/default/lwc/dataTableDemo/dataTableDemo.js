@@ -1,4 +1,5 @@
 import { LightningElement, wire, track, api } from "lwc";
+import { refreshApex } from '@salesforce/apex';
 
 import fetchDataList from "@salesforce/apex/ImportExcelDemo.fetchDataList";
 import countRecordOfList from "@salesforce/apex/ImportExcelDemo.countRecordOfList";
@@ -15,7 +16,6 @@ const getNumberPage = (numberRecord, limitPage) => {
 export default class DataTableDemo extends LightningElement {
     lstIdSeleced = [];
     dataList;
-    modeEdit = false;
     @track lstdata;
     @track numberSelected = 0;
     @track disableDelete = true;
@@ -61,6 +61,8 @@ export default class DataTableDemo extends LightningElement {
     @track currentPage = 1;
     @track limitPage = 10;
 
+    @track wiredListData = [];
+    @track wiredPageInfo;
     /**
      * Render call back
      */
@@ -87,8 +89,9 @@ export default class DataTableDemo extends LightningElement {
      * Get data for list
      * @param {*} result
      */
-    @wire(fetchDataList, { offsetNum: 1, limitNum: 10 })
+    @wire(fetchDataList, { offsetNum: '$currentPage', limitNum: 10 })
     wiredDataList(result) {
+        this.wiredListData = result;
         if (result.data && result.data.lstData) {
             let newDataTable = result.data.lstData.map((record, index) => {
                 let viewRecord = { Id: record.Id };
@@ -126,6 +129,7 @@ export default class DataTableDemo extends LightningElement {
      */
     @wire(countRecordOfList)
     wiredRecordOfList(result) {
+        this.wiredPageInfo = result;
         if (result.data) {
             this.error = undefined;
             const totalPage = getNumberPage(result.data, this.limitPage);
@@ -255,6 +259,7 @@ export default class DataTableDemo extends LightningElement {
      * Refresh data of datatable
      */
     refreshData() {
-        this.getDataList(10);
+        refreshApex(this.wiredListData);
+        refreshApex(this.wiredPageInfo);
     }
 }

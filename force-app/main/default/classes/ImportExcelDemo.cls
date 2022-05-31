@@ -1,5 +1,8 @@
 public with sharing class ImportExcelDemo {
 
+    /**
+     * Function get records from apex
+     */
     @AuraEnabled(cacheable = true)
     public static Object fetchDataList(Integer offsetNum, Integer limitNum) {
         Sample2ViewDataObject viewObject = new Sample2ViewDataObject();
@@ -27,6 +30,9 @@ public with sharing class ImportExcelDemo {
         return JSON.deserializeUntyped(JSON.serialize(viewObject));
     }
 
+    /**
+     * Function get count of record
+     */
     @AuraEnabled(cacheable = true)
     public static Integer countRecordOfList(){
         Integer numberDatas = 0;
@@ -36,16 +42,16 @@ public with sharing class ImportExcelDemo {
         return numberDatas;
     }
 
-
-
+    /**
+     * Function import excel to DB
+     * @return {Object} result object
+     */
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
         ImportExcelResult result = new ImportExcelResult();
         Integer heapNew = Limits.getHeapSize();
-        // Validate backend here
-
         List<sample2__c> listBuyerImport = convertListDataImportToListSampleObject(listData);
-        // Tinh Toan luu record bi loi vao customobject, neu tinh toan loi => 
+        // Savepoint to rollback if import error
         Savepoint sp = Database.setSavePoint();
         Integer heapNew1 = Limits.getHeapSize();
         if (sample2__c.SObjectType.getDescribe().isCreateable()) {
@@ -64,6 +70,7 @@ public with sharing class ImportExcelDemo {
         Integer heapNew2 = Limits.getHeapSize();
         return JSON.deserializeUntyped(JSON.serialize(result));
     }
+
     /**
      * convert list data import to list SObject
      */
