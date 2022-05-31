@@ -2,14 +2,14 @@ public with sharing class ValidateBackendDemo {
     public ValidateBackendDemo() {
         //constructor
     }
-    public static LpqImportResult validateBE(List<List<String>> listData, List<String> headers) {
+    public static LnhImportResult validateBE(List<List<String>> listData, List<String> headers) {
         Integer row = 0;
         Integer abcd;
         Boolean isColumnError = false;
         Boolean isRowError = false;
         FieldValidateConditionEntity field = new FieldValidateConditionEntity();
         String dataColumn = '';
-        LpqImportResult result = new LpqImportResult();
+        LnhImportResult result = new LnhImportResult();
         result.isInputValid = true;
 
         // Khởi tạo List Integer chứa list các cột lỗi

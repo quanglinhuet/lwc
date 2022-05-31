@@ -1,11 +1,11 @@
-public with sharing class LpqImportResult {
+public with sharing class LnhImportResult {
     public Boolean success;
     public List<Integer> indexsErrorRecord;
     public Boolean isInputValid;
     public Map<Integer, String> validateErrorMessages;
     public Map<Integer, List<Integer>> validateErrorCollumns;
 
-    public LpqImportResult () {
+    public LnhImportResult () {
         this.indexsErrorRecord = new List<Integer>();
         this.isInputValid = true;
         this.validateErrorMessages = new Map<Integer,String>();

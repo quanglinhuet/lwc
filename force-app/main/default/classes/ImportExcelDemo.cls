@@ -2,7 +2,7 @@ public with sharing class ImportExcelDemo {
 
     @AuraEnabled
     public static Object importObjectFromExcel(List<List<String>> listData, Integer startIndex, List<String> headers){
-        LpqImportResult result = ValidateBackendDemo.validateBE(listData, headers);
+        LnhImportResult result = ValidateBackendDemo.validateBE(listData, headers);
         if (!result.isInputValid) {
             return JSON.deserializeUntyped(Json.serialize(result));
         }
