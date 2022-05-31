@@ -162,18 +162,18 @@ export default class DemoImportExcel extends LightningElement {
      */
     async importExcelHandle() {
         // Validate FrontEnd
-        // this.invalidExcel = false;
-        // let startTimeValidate = performance.now();
-        // let validateResult = this.validateExcelInput();
-        // // Handle when validate frontend error
-        // if (!validateResult.valid) {
-        //     // export excel
-        //     // console.log(validateResult.errors);
-        //     this.invalidExcel = true;
-        //     this.showExcelValidateError(validateResult.errors);
-        //     console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
-        //     return;
-        // } 
+        this.invalidExcel = false;
+        let startTimeValidate = performance.now();
+        let validateResult = this.validateExcelInput();
+        // Handle when validate frontend error
+        if (!validateResult.valid) {
+            // export excel
+            // console.log(validateResult.errors);
+            this.invalidExcel = true;
+            this.showExcelValidateError(validateResult.errors);
+            console.log(`Validate frontent took ${performance.now() - startTimeValidate}`);
+            return;
+        } 
         console.log(
             "Size Object: " + this.roughSizeOfObject(this.xlsxImportData)
         );
@@ -193,7 +193,6 @@ export default class DemoImportExcel extends LightningElement {
                     this.isImportSuccess = true;
                     this.fileXlsxLoading = false;
                     // Refresh datatable
-                    console.log('Mùi và Toàn thật tuyệt vời!');
                     this.template.querySelector('c-data-table-demo').refreshData();
                 } else {
                     // Gen file excel
