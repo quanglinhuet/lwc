@@ -15,9 +15,6 @@
     <!-- Header end -->
     <!-- Table list record start -->
     <div class="data-table-div">
-      <!-- Datatable component here-->
-      <c-data-table-demo></c-data-table-demo>
-      <!--  Pagination buttons end -->
 
 
       <template if:true={importModalIsShow}>
@@ -67,7 +64,7 @@
               </div>
             </div>
             <footer class="slds-modal__footer">
-              <lightning-button variant="brand" label="Start Import" onclick={importExcelHandle} if:true={importEnable}>
+              <lightning-button variant="brand" label="Start Import" onclick={validateExcelHanle} if:true={importEnable}>
               </lightning-button>
               <lightning-button variant="brand" label="Start Import" if:false={importEnable} disabled>
               </lightning-button>
