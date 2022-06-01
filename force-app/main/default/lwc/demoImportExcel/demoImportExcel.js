@@ -146,6 +146,7 @@ export default class DemoImportExcel extends LightningElement {
                     console.log(data);
                     this.isImportSuccess = true;
                     this.fileXlsxLoading = false;
+                    this.importModalIsShow = false;
                     this.template.querySelector('c-data-table-demo').refreshData();
                 } else {
                     // Gen file excel

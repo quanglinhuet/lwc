@@ -92,32 +92,25 @@ export default class DataTableDemo extends LightningElement {
     @wire(fetchDataList, { offsetNum: '$currentPage', limitNum: 10 })
     wiredDataList(result) {
         this.wiredListData = result;
-        if (result.data && result.data.lstData) {
-            let newDataTable = result.data.lstData.map((record, index) => {
-                let viewRecord = { Id: record.Id };
-                if (record.Field895__c) {
-                    viewRecord.Field895__c = record.Field895__c;
+        if (result.data) {
+            let newDataTable = result.data.map((record, index) => {
+                let viewRecord = { Id: record.Id.value };
+                if (record.Field895__c.value) {
+                    viewRecord.Field895__c = record.Field895__c.value;
                 }
-                if (record.Field757__c) {
-                    viewRecord.Field757__c = record.Field757__c;
+                if (record.Field757__c.value) {
+                    viewRecord.Field757__c = record.Field757__c.value;
                 }
-                if (record.Field856__c) {
-                    viewRecord.Field856__c = record.Field856__c;
+                if (record.Field856__c.value) {
+                    viewRecord.Field856__c = record.Field856__c.value;
                 }
-                if (record.Field348__c) {
-                    viewRecord.Field348__c = record.Field348__c;
+                if (record.Field348__c.value) {
+                    viewRecord.Field348__c = record.Field348__c.value;
                 }
-                if (result.data.lstFieldError[index].find(field => {
-                    return field === 'Field348__c';
-                })) {
-                    viewRecord.errorCalcultion = 'background-color-red';
-                } else {
-                    viewRecord.errorCalcultion = '';
-                }
+                viewRecord.errorCalcultion = record.Field348__c.error.length > 0? 'background-color-red' : '';
                 return viewRecord;
             });
             this.lstdata = newDataTable;
-            console.log(result);
         } else if (result.error) {
             this.lstdata = [];
         }
@@ -157,28 +150,22 @@ export default class DataTableDemo extends LightningElement {
         console.log(limit);
         fetchDataList({ offsetNum: this.currentPage, limitNum: limit })
             .then((result) => {
-                if (result.lstData) {
-                    let newDataTable = result.lstData.map((record, index) => {
-                        let viewRecord = { Id: record.Id };
-                        if (record.Field895__c) {
-                            viewRecord.Field895__c = record.Field895__c;
+                if (result) {
+                    let newDataTable = result.lstData.map(record => {
+                        let viewRecord = { Id: record.Id.value };
+                        if (record.Field895__c.value) {
+                            viewRecord.Field895__c = record.Field895__c.value;
                         }
-                        if (record.Field757__c) {
-                            viewRecord.Field757__c = record.Field757__c;
+                        if (record.Field757__c.value) {
+                            viewRecord.Field757__c = record.Field757__c.value;
                         }
-                        if (record.Field856__c) {
-                            viewRecord.Field856__c = record.Field856__c;
+                        if (record.Field856__c.value) {
+                            viewRecord.Field856__c = record.Field856__c.value;
                         }
-                        if (record.Field348__c) {
-                            viewRecord.Field348__c = record.Field348__c;
+                        if (record.Field348__c.value) {
+                            viewRecord.Field348__c = record.Field348__c.value;
                         }
-                        if (result.lstFieldError[index].find(field => {
-                            return field === 'Field348__c';
-                        })) {
-                            viewRecord.errorCalcultion = 'background-color-red';
-                        } else {
-                            viewRecord.errorCalcultion = '';
-                        }
+                        viewRecord.errorCalcultion = record.Field348__c.error.length > 0? 'background-color-red' : '';
                         return viewRecord;
                     });
                     this.lstdata = newDataTable;

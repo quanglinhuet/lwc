@@ -5,29 +5,66 @@ public with sharing class ImportExcelDemo {
      */
     @AuraEnabled(cacheable = true)
     public static Object fetchDataList(Integer offsetNum, Integer limitNum) {
-        Sample2ViewDataObject viewObject = new Sample2ViewDataObject();
-        viewObject.lstData = [
-                SELECT 
-                    Id , 
-                    Field895__c,
-                    Field757__c,
-                    Field856__c,
-                    Field348__c
-                FROM sample2__c
-                WITH SECURITY_ENFORCED
-                LIMIT :limitNum
-                OFFSET :((offsetNum - 1) * limitNum)
-            ];
-        viewObject.lstFieldError = new List<List<String>>();
+        // Sample2ViewDataObject viewObject = new Sample2ViewDataObject();
+        // viewObject.lstData = [
+        //         SELECT 
+        //             Id , 
+        //             Field895__c,
+        //             Field757__c,
+        //             Field856__c,
+        //             Field348__c
+        //         FROM sample2__c
+        //         WITH SECURITY_ENFORCED
+        //         LIMIT :limitNum
+        //         OFFSET :((offsetNum - 1) * limitNum)
+        //     ];
+        // viewObject.lstFieldError = new List<List<String>>();
+        // for (sample2__c sampleObj : viewObject.lstData) {
+        //     List<String> lstFieldErrorInCurrentRecord = new List<String>();
+        //     if (Double.valueOf(sampleObj.Field348__c) < 60) {
+        //         lstFieldErrorInCurrentRecord.add('Field348__c');
+        //     }
+        //     viewObject.lstFieldError.add(lstFieldErrorInCurrentRecord);
+        // }
+        // return JSON.deserializeUntyped(JSON.serialize(viewObject));
 
-        for (sample2__c sampleObj : viewObject.lstData) {
-            List<String> lstFieldErrorInCurrentRecord = new List<String>();
-            if (Double.valueOf(sampleObj.Field348__c) < 60) {
-                lstFieldErrorInCurrentRecord.add('Field348__c');
+        List<Map<String,Sample2ViewDataObject>> listData = new List<Map<String,Sample2ViewDataObject>>();
+        List<sample2__c> listDataSample = [
+            SELECT 
+                Id , 
+                Field895__c,
+                Field757__c,
+                Field856__c,
+                Field348__c
+            FROM sample2__c
+            WITH SECURITY_ENFORCED
+            LIMIT :limitNum
+            OFFSET :((offsetNum - 1) * limitNum)
+        ];
+        List<String> listFieldInfo = new List<String>();
+        listFieldInfo.add('Id');
+        listFieldInfo.add('Field895__c');
+        listFieldInfo.add('Field757__c');
+        listFieldInfo.add('Field856__c');
+        listFieldInfo.add('Field348__c');
+        for (sample2__c sampleObj : listDataSample) {
+            Map<String,Sample2ViewDataObject> dataObj = new Map<String,Sample2ViewDataObject>();
+            for (String fieldName : listFieldInfo) {
+                Sample2ViewDataObject dataObject = new Sample2ViewDataObject();
+                dataObject.value = sampleObj.get(fieldName);
+                List<String> lstFieldErrorInCurrentRecord = new List<String>();
+                if (fieldName == 'Field348__c' && (sampleObj.Field348__c == null || Double.valueOf(sampleObj.Field348__c) < 60)) {
+                    lstFieldErrorInCurrentRecord.add('Field348__c error');
+                    dataObject.error = lstFieldErrorInCurrentRecord;
+                } else {
+                    dataObject.error = new List<String>();
+                }
+                dataObj.put(fieldName, dataObject);
             }
-            viewObject.lstFieldError.add(lstFieldErrorInCurrentRecord);
+            listData.add(dataObj);
         }
-        return JSON.deserializeUntyped(JSON.serialize(viewObject));
+        // return JSON.deserializeUntyped(JSON.serialize(viewObject));
+        return JSON.deserializeUntyped(JSON.serialize(listData));
     }
 
     /**
